@@ -96,6 +96,10 @@ export async function getMemberProfile(uid: string): Promise<MemberProfile | nul
       updatedAt: raw.updatedAt || null,
     };
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('offline') || msg.includes('unavailable') || msg.includes('Failed to get document')) {
+      return null;
+    }
     handleFirestoreError(error, OperationType.GET, path);
   }
 }

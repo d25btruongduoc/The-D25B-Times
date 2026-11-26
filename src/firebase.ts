@@ -94,8 +94,9 @@ async function testConnection(db: Firestore): Promise<void> {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+    // Silent catch for offline or un-provisioned test document without breaking app
+    if (error instanceof Error && !error.message.includes('offline')) {
+      console.debug('Firebase connection test skipped:', error.message);
     }
   }
 }
@@ -368,7 +369,17 @@ export function formatFirebaseAuthError(error: unknown): string {
       return 'Tên miền hiện tại chưa được cấp phép đăng nhập. Cần thêm tên miền vào Firebase Console > Authentication > Settings > Authorized domains.';
     case 'auth/too-many-requests':
       return 'Bạn đã thử quá nhiều lần. Vui lòng đợi ít phút rồi thử lại.';
-    default:
-      return error instanceof Error ? error.message : 'Đã xảy ra lỗi xác thực. Vui lòng thử lại.';
+    default: {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (
+        msg.includes('access_denied') ||
+        msg.includes('403') ||
+        msg.includes('verification process') ||
+        msg.includes('Not a valid origin')
+      ) {
+        return 'Google OAuth đang ở chế độ thử nghiệm trên Google Cloud/Firebase nên tài khoản của bạn chưa được cấp phép tester. Vui lòng sử dụng Đăng ký hoặc Đăng nhập bằng Email & Mật khẩu ngay bên dưới để truy cập tức thì.';
+      }
+      return msg || 'Đã xảy ra lỗi xác thực. Vui lòng thử lại.';
+    }
   }
 }

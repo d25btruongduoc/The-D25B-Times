@@ -12,12 +12,15 @@ import {
   HardDrive,
   KeyRound,
   LogOut,
+  Mail,
   MailCheck,
   RefreshCw,
   UserCircle2,
   Users,
   X,
 } from 'lucide-react';
+import { DEADLINES, APP_UPDATES } from '../data/d25bData';
+import { sendGmailNotice } from '../services/gmailService';
 import {
   authorizeGoogleDriveToken,
   authorizeGoogleSheetsToken,
@@ -127,6 +130,10 @@ export function MemberModal({
   const [sheetsConfig, setSheetsConfig] = useState<SheetsSyncConfig | null>(null);
   const [showSheetsConfirm, setShowSheetsConfirm] = useState(false);
   const [sheetsSyncBusy, setSheetsSyncBusy] = useState(false);
+  const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
+  const [archiveActionMap, setArchiveActionMap] = useState<Record<string, 'keep' | 'delete'>>({});
+  const [gmailSending, setGmailSending] = useState(false);
+  const [gmailNoticeMsg, setGmailNoticeMsg] = useState<string | null>(null);
 
   const isAdmin = isVerifiedAdminEmail(user?.email, user?.emailVerified);
 
@@ -1082,6 +1089,105 @@ export function MemberModal({
                   </table>
                 </div>
               )}
+
+              {/* Archive Curation & Gmail Notice Widget */}
+              <div className="mt-6 p-4 rounded-xl bg-[#0B1120] border border-slate-800 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-cyan-400" />
+                      <span>Quản lý tin lưu trữ &amp; Gửi báo cáo Gmail</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Chọn các mốc deadline cũ hoặc thông báo để giữ lại / phân bổ hoặc xóa, sau đó gửi báo cáo qua Gmail tới <span className="font-mono text-cyan-300">d25b.truongduoc@gmail.com</span>.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={gmailSending || selectedArchiveIds.length === 0}
+                    onClick={async () => {
+                      setGmailSending(true);
+                      setGmailNoticeMsg(null);
+                      try {
+                        const itemsReport = selectedArchiveIds.map((id) => {
+                          const item = [...DEADLINES, ...APP_UPDATES].find((x) => x.id === id);
+                          const action = archiveActionMap[id] || 'keep';
+                          return `- [${action === 'keep' ? 'GIỮ LẠI / PHÂN BỔ' : 'XÓA'}] ${item?.title || id}`;
+                        }).join('\n');
+
+                        const bodyText = `BÁO CÁO QUẢN LÝ TIN LƯU TRỮ - THE D25B TIMES\n\nQuản trị viên đã xem xét các mục lưu trữ:\n${itemsReport}\n\nGửi từ tài khoản quản trị lớp D25B.`;
+                        
+                        await sendGmailNotice({
+                          toEmail: 'd25b.truongduoc@gmail.com',
+                          subject: `[D25B Times] Báo cáo duyệt tin lưu trữ (${selectedArchiveIds.length} mục)`,
+                          bodyText,
+                        });
+                        setGmailNoticeMsg('Đã gửi email báo cáo thành công đến d25b.truongduoc@gmail.com qua Gmail!');
+                      } catch (err) {
+                        setGmailNoticeMsg(err instanceof Error ? err.message : 'Lỗi gửi email.');
+                      } finally {
+                        setGmailSending(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>{gmailSending ? 'Đang gửi Gmail...' : 'Gửi báo cáo qua Gmail'}</span>
+                  </button>
+                </div>
+
+                {gmailNoticeMsg && (
+                  <p className={`text-xs p-3 rounded-lg ${gmailNoticeMsg.includes('thành công') ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-300 border border-rose-500/30'}`}>
+                    {gmailNoticeMsg}
+                  </p>
+                )}
+
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {[...DEADLINES, ...APP_UPDATES].slice(0, 10).map((item) => {
+                    const isSelected = selectedArchiveIds.includes(item.id);
+                    const currentAction = archiveActionMap[item.id] || 'keep';
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 rounded-lg bg-[#0E1525] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                      >
+                        <label className="flex items-center gap-2.5 min-w-0 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSelectedArchiveIds((prev) =>
+                                checked ? [...prev, item.id] : prev.filter((id) => id !== item.id)
+                              );
+                            }}
+                            className="rounded border-slate-700 text-cyan-400 focus:ring-cyan-400"
+                          />
+                          <span className="font-medium text-slate-200 truncate">{item.title}</span>
+                        </label>
+
+                        {isSelected && (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-slate-400">Thao tác:</span>
+                            <select
+                              value={currentAction}
+                              onChange={(e) => {
+                                const val = e.target.value as 'keep' | 'delete';
+                                setArchiveActionMap((prev) => ({ ...prev, [item.id]: val }));
+                              }}
+                              className="px-2 py-1 rounded bg-[#070B14] border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-cyan-400 cursor-pointer"
+                            >
+                              <option value="keep">Giữ lại &amp; Phân bổ</option>
+                              <option value="delete">Xóa vĩnh viễn</option>
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>

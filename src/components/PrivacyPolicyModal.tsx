@@ -60,6 +60,8 @@ export function PrivacyPolicyModal({
           </button>
         </div>
 
+
+
         <div className="p-5 sm:p-6 space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
           <section className="p-4 rounded-xl bg-[#0B1120] border border-slate-800 space-y-1.5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-300">

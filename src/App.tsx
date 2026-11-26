@@ -12,6 +12,7 @@ import { MemberModal } from './components/MemberModal';
 import { PersonalHomeView } from './components/PersonalHomeView';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { StudyView } from './components/StudyView';
+import { TermsModal } from './components/TermsModal';
 import { CONTACTS, HandbookTab, NavSection } from './data/d25bData';
 import { getCachedDriveAccessToken, subscribeAuthState } from './firebase';
 import { saveBackupToGoogleDrive } from './services/driveBackupService';
@@ -33,6 +34,7 @@ export default function App() {
   const [selectedHandbookTab, setSelectedHandbookTab] = useState<HandbookTab>('campus');
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -333,10 +335,16 @@ export default function App() {
         onAcceptPolicy={() => setConsentAccepted(true)}
       />
 
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        onAcceptTerms={() => setConsentAccepted(true)}
+      />
+
       {/* Quiet Tech Footer */}
       <footer className="border-t border-slate-800 bg-[#0B1120] mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 md:grid-cols-12 gap-8 text-sm text-slate-400">
-          <div className="md:col-span-5 space-y-2">
+          <div className="md:col-span-4 space-y-2">
             <p className="font-heading text-lg font-bold text-slate-50">The D25B Times</p>
             <p className="text-xs leading-relaxed">
               Cổng thông tin học tập và sinh hoạt Lớp D25B — Trường Dược, Đại học Y Dược TP. Hồ Chí Minh. Thiết kế tối ưu trải nghiệm tra cứu cho sinh viên khóa D25B.
@@ -346,7 +354,7 @@ export default function App() {
             </p>
           </div>
 
-          <div className="md:col-span-4 space-y-1.5 text-xs">
+          <div className="md:col-span-3 space-y-1.5 text-xs">
             <p className="font-semibold text-slate-100 uppercase tracking-wider">
               {CONTACTS.academicOffice.name}
             </p>
@@ -356,6 +364,24 @@ export default function App() {
           </div>
 
           <div className="md:col-span-3 space-y-2 text-xs">
+            <a
+              href="https://www.facebook.com/daranox.lab"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-semibold text-slate-100 uppercase tracking-wider hover:text-cyan-400 transition-colors group"
+            >
+              <span>DaraNox Lab</span>
+              <ExternalLink className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
+            </a>
+            <p className="text-xs leading-relaxed">
+              Nghiên cứu và phát triển phần mềm tích hợp, giải pháp số hóa trải nghiệm học tập và sinh hoạt.
+            </p>
+            <p className="font-mono text-cyan-400 pt-0.5">
+              facebook.com/daranox.lab
+            </p>
+          </div>
+
+          <div className="md:col-span-2 space-y-2 text-xs">
             <p className="font-semibold text-slate-100 uppercase tracking-wider">
               Liên kết chính thức
             </p>
@@ -393,6 +419,13 @@ export default function App() {
                 className="text-left text-cyan-400 hover:underline transition-colors cursor-pointer"
               >
                 Chính sách quyền riêng tư
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(true)}
+                className="text-left text-cyan-400 hover:underline transition-colors cursor-pointer"
+              >
+                Điều khoản dịch vụ
               </button>
             </div>
           </div>
