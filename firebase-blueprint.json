@@ -1,0 +1,150 @@
+{
+  "entities": {
+    "MemberProfile": {
+      "title": "MemberProfile",
+      "description": "Registered member account and backed-up in-app study/deadline activity (stores email and activity backup only; no full name, class, or student ID collected).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the member.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Member email address.",
+          "minLength": 3,
+          "maxLength": 150
+        },
+        "authProvider": {
+          "type": "string",
+          "enum": ["password", "facebook.com", "google.com"],
+          "description": "Primary Firebase sign-in provider used."
+        },
+        "consentAccepted": {
+          "type": "boolean",
+          "description": "Explicit member consent to the Privacy Policy for saving account email and activity backup."
+        },
+        "completedDeadlineIds": {
+          "type": "array",
+          "description": "Bounded list of completed deadline task IDs."
+        },
+        "bookmarkedCourseIds": {
+          "type": "array",
+          "description": "Bounded list of bookmarked course IDs in StudyView."
+        },
+        "preferredClass": {
+          "type": "string",
+          "enum": ["ALL", "D25A", "D25B", "D25C", "D25D"],
+          "description": "Saved HK2 schedule filter preference."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last-updated timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "authProvider",
+        "consentAccepted",
+        "completedDeadlineIds",
+        "bookmarkedCourseIds",
+        "preferredClass",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Trusted admin role assignment record.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 150
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "SheetsSyncConfig": {
+      "title": "SheetsSyncConfig",
+      "description": "Admin-only Google Sheets export metadata and target spreadsheet link.",
+      "type": "object",
+      "properties": {
+        "spreadsheetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "spreadsheetUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "spreadsheetTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "lastSyncedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastSyncedCount": {
+          "type": "number"
+        },
+        "updatedByUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "spreadsheetId",
+        "spreadsheetUrl",
+        "spreadsheetTitle",
+        "lastSyncedAt",
+        "lastSyncedCount",
+        "updatedByUid"
+      ]
+    }
+  },
+  "firestore": {
+    "/members/{userId}": {
+      "schema": { "$ref": "#/entities/MemberProfile" },
+      "description": "Member account email and backed-up app activity keyed by Firebase Auth UID."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Trusted admin role lookup documents managed strictly by the bootstrapped admin."
+    },
+    "/app_config/{configId}": {
+      "schema": { "$ref": "#/entities/SheetsSyncConfig" },
+      "description": "Admin-only Google Sheets sync configuration."
+    }
+  }
+}

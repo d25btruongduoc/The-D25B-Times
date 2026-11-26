@@ -1,0 +1,210 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global hardened helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    // Cost-safe admin check (no get/exists) for allow list queries
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'd25b.truongduoc@gmail.com';
+    }
+
+    // Full admin check for single-document operations
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidPreferredClass(val) {
+      return val is string && val.size() >= 3 && val.size() <= 4 && val in ['ALL', 'D25A', 'D25B', 'D25C', 'D25D'];
+    }
+
+    function isValidAuthProvider(val) {
+      return val is string && val.size() >= 8 && val.size() <= 20 && val in ['password', 'facebook.com', 'google.com'];
+    }
+
+    function isValidBoundedIdList(listVal, maxLen) {
+      return listVal is list &&
+        listVal.size() <= maxLen &&
+        (listVal.size() == 0 || (listVal[0] is string && listVal[0].size() >= 1 && listVal[0].size() <= 100));
+    }
+
+    function isValidMemberProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid',
+          'email',
+          'authProvider',
+          'consentAccepted',
+          'completedDeadlineIds',
+          'bookmarkedCourseIds',
+          'preferredClass',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'email',
+          'authProvider',
+          'consentAccepted',
+          'completedDeadlineIds',
+          'bookmarkedCourseIds',
+          'preferredClass',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid == userId &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+        isValidAuthProvider(data.authProvider) &&
+        data.consentAccepted is bool && data.consentAccepted == true &&
+        isValidBoundedIdList(data.completedDeadlineIds, 150) &&
+        isValidBoundedIdList(data.bookmarkedCourseIds, 80) &&
+        isValidPreferredClass(data.preferredClass) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRole(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'role', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid == userId &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+        data.role is string && data.role.size() == 5 && data.role == 'admin' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSheetsSyncConfig(data) {
+      return data.keys().hasAll([
+          'spreadsheetId',
+          'spreadsheetUrl',
+          'spreadsheetTitle',
+          'lastSyncedAt',
+          'lastSyncedCount',
+          'updatedByUid'
+        ]) &&
+        data.keys().hasOnly([
+          'spreadsheetId',
+          'spreadsheetUrl',
+          'spreadsheetTitle',
+          'lastSyncedAt',
+          'lastSyncedCount',
+          'updatedByUid'
+        ]) &&
+        data.spreadsheetId is string && data.spreadsheetId.size() >= 1 && data.spreadsheetId.size() <= 128 &&
+        data.spreadsheetUrl is string && data.spreadsheetUrl.size() >= 1 && data.spreadsheetUrl.size() <= 300 &&
+        data.spreadsheetTitle is string && data.spreadsheetTitle.size() >= 1 && data.spreadsheetTitle.size() <= 150 &&
+        data.lastSyncedAt is timestamp &&
+        data.lastSyncedCount is int && data.lastSyncedCount >= 0 && data.lastSyncedCount <= 100000 &&
+        data.updatedByUid is string && data.updatedByUid.size() >= 1 && data.updatedByUid.size() <= 128 &&
+        data.updatedByUid == request.auth.uid;
+    }
+
+    // 1. Member email & backed-up app activity (PII strictly isolated)
+    match /members/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerifiedUser() && (existing().uid == request.auth.uid || isBootstrappedAdmin());
+
+      allow create: if isValidId(userId) &&
+        isOwner(userId) &&
+        isValidMemberProfile(incoming(), userId) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId) &&
+        isVerifiedUser() &&
+        isValidMemberProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().authProvider == existing().authProvider &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (
+            isOwner(userId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'email',
+              'completedDeadlineIds',
+              'bookmarkedCourseIds',
+              'preferredClass',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // 2. Trusted admin role documents (no self-assignment)
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isBootstrappedAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(userId) &&
+        isBootstrappedAdmin() &&
+        isValidAdminRole(incoming(), userId) &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(userId) &&
+        isBootstrappedAdmin() &&
+        isValidAdminRole(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(userId) && isBootstrappedAdmin();
+    }
+
+    // 3. Admin-only Google Sheets export config
+    match /app_config/{configId} {
+      allow get: if isValidId(configId) && isAdmin();
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(configId) &&
+        isAdmin() &&
+        isValidSheetsSyncConfig(incoming()) &&
+        incoming().lastSyncedAt == request.time;
+      allow update: if isValidId(configId) &&
+        isAdmin() &&
+        isValidSheetsSyncConfig(incoming()) &&
+        incoming().lastSyncedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'spreadsheetId',
+          'spreadsheetUrl',
+          'spreadsheetTitle',
+          'lastSyncedAt',
+          'lastSyncedCount',
+          'updatedByUid'
+        ]);
+      allow delete: if isValidId(configId) && isBootstrappedAdmin();
+    }
+
+    // 4. Connection probe document for startup health check
+    match /test/{docId} {
+      allow get: if isValidId(docId) && docId == 'connection';
+    }
+  }
+}

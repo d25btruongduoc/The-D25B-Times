@@ -1,0 +1,6 @@
+{
+  "name": "The D25B Times",
+  "description": "Ấn phẩm & Cổng thông tin học tập Lớp D25B – Trường Dược, Đại học Y Dược TP. Hồ Chí Minh (UMP SP).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
