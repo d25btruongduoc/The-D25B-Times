@@ -175,6 +175,13 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
         }),
       });
 
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(
+          'Trang đang chạy ở chế độ tĩnh (như GitHub Pages) nên chưa có máy chủ backend cho Gemini AI. Bộ tìm kiếm nội bộ không tốn lượt vẫn hoạt động bình thường!'
+        );
+      }
+
       const data = (await res.json()) as {
         reply?: string;
         error?: string;

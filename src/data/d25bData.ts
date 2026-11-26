@@ -104,8 +104,13 @@ export interface SearchIndexItem {
   externalUrl?: string;
 }
 
+const ASSET_BASE_URL =
+  typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+    ? import.meta.env.BASE_URL
+    : '/';
+
 export const IMAGES = {
-  campus: '/assets/aistudio/image-default_bce97e21.png',
+  campus: `${ASSET_BASE_URL}assets/aistudio/image-default_bce97e21.png`,
 } as const;
 
 export const CONTACTS = {

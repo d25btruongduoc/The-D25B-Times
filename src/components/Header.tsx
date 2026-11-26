@@ -48,7 +48,7 @@ export function Header({
           className="group inline-flex items-center gap-2.5 text-left shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-sm"
         >
           <img
-            src="/assets/d25b-logo-nobg.png"
+            src={`${import.meta.env?.BASE_URL ?? '/'}assets/d25b-logo-nobg.png`}
             alt="Logo D25B"
             className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 object-contain rounded-full"
           />

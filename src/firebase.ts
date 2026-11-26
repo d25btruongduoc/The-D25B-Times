@@ -79,8 +79,11 @@ async function loadFirebaseRuntimeConfig(): Promise<FirebaseRuntimeConfig> {
   }
 
   const res = await fetch('/api/firebase-config', { cache: 'no-store' });
-  if (!res.ok) {
-    throw new Error('Không thể tải cấu hình Firebase từ máy chủ.');
+  const contentType = res.headers.get('content-type') || '';
+  if (!res.ok || !contentType.includes('application/json')) {
+    throw new Error(
+      'Chưa có cấu hình Firebase cho bản tĩnh. Hãy thêm biến VITE_FIREBASE_* hoặc chạy kèm máy chủ.'
+    );
   }
   return (await res.json()) as FirebaseRuntimeConfig;
 }
