@@ -341,7 +341,17 @@ export function HomeView({
               <p className="mt-3 text-sm text-slate-300 leading-relaxed">
                 &ldquo;Về sơ bộ thì tui đã làm sườn cho site này nhưng vẫn rất cần sự hỗ trợ từ anh em trong lớp có khả năng design, tổng hợp tài liệu hoặc cập nhật thông tin học bổng, tài chính để trang web của lớp ngày càng xịn hơn!&rdquo;
               </p>
-              <div className="mt-4 pt-4 border-t border-slate-800 space-y-2 text-xs text-slate-300">
+              <div className="mt-4 pt-4 border-t border-slate-800 space-y-3 text-xs text-slate-300">
+                <p className="font-semibold text-slate-200">Video giới thiệu &amp; hướng dẫn:</p>
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shadow-md">
+                  <iframe
+                    src="https://www.youtube.com/embed/Y6c1mGd-9tw"
+                    title="The D25B Times Video"
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
                 <p>
                   Zalo Lớp trưởng:{' '}
                   <span className="font-mono font-semibold text-slate-50">
