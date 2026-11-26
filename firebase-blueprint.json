@@ -2,7 +2,7 @@
   "entities": {
     "MemberProfile": {
       "title": "MemberProfile",
-      "description": "Registered member account and backed-up in-app study/deadline activity (stores email and activity backup only; no full name, class, or student ID collected).",
+      "description": "Registered member account, customizable personal home settings, and backed-up in-app activity (no Facebook login; no mandatory class/MSSV PII).",
       "type": "object",
       "properties": {
         "uid": {
@@ -20,12 +20,45 @@
         },
         "authProvider": {
           "type": "string",
-          "enum": ["password", "facebook.com", "google.com"],
+          "enum": ["password", "google.com"],
           "description": "Primary Firebase sign-in provider used."
         },
         "consentAccepted": {
           "type": "boolean",
-          "description": "Explicit member consent to the Privacy Policy for saving account email and activity backup."
+          "description": "Explicit member consent to the Privacy Policy."
+        },
+        "customName": {
+          "type": "string",
+          "description": "User-customized display name for Personal Home and Forum.",
+          "minLength": 0,
+          "maxLength": 60
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "User-customized avatar URL or small data URL.",
+          "minLength": 0,
+          "maxLength": 65000
+        },
+        "bio": {
+          "type": "string",
+          "description": "User-customized personal bio / study goal.",
+          "minLength": 0,
+          "maxLength": 240
+        },
+        "accentColor": {
+          "type": "string",
+          "enum": ["cyan", "emerald", "violet", "amber"],
+          "description": "Personal home accent theme."
+        },
+        "autoDriveBackup": {
+          "type": "boolean",
+          "description": "Whether the user enabled automatic backup to their Google Drive."
+        },
+        "driveBackupFileId": {
+          "type": "string",
+          "description": "User's Google Drive backup file ID.",
+          "minLength": 0,
+          "maxLength": 128
         },
         "completedDeadlineIds": {
           "type": "array",
@@ -33,7 +66,7 @@
         },
         "bookmarkedCourseIds": {
           "type": "array",
-          "description": "Bounded list of bookmarked course IDs in StudyView."
+          "description": "Bounded list of bookmarked course IDs."
         },
         "preferredClass": {
           "type": "string",
@@ -42,13 +75,11 @@
         },
         "createdAt": {
           "type": "string",
-          "format": "date-time",
-          "description": "Server creation timestamp."
+          "format": "date-time"
         },
         "updatedAt": {
           "type": "string",
-          "format": "date-time",
-          "description": "Server last-updated timestamp."
+          "format": "date-time"
         }
       },
       "required": [
@@ -56,6 +87,12 @@
         "email",
         "authProvider",
         "consentAccepted",
+        "customName",
+        "avatarUrl",
+        "bio",
+        "accentColor",
+        "autoDriveBackup",
+        "driveBackupFileId",
         "completedDeadlineIds",
         "bookmarkedCourseIds",
         "preferredClass",
@@ -63,65 +100,108 @@
         "updatedAt"
       ]
     },
+    "ForumPost": {
+      "title": "ForumPost",
+      "description": "Public community forum post (never stores user email or private PII).",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "authorAvatar": { "type": "string", "minLength": 0, "maxLength": 65000 },
+        "category": { "type": "string", "enum": ["study", "resources", "chat", "team"] },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "content": { "type": "string", "minLength": 1, "maxLength": 3000 },
+        "attachmentUrl": { "type": "string", "minLength": 0, "maxLength": 300 },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "postId",
+        "authorUid",
+        "authorName",
+        "authorAvatar",
+        "category",
+        "title",
+        "content",
+        "attachmentUrl",
+        "visibility",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ForumComment": {
+      "title": "ForumComment",
+      "description": "Comment/reply on a forum post.",
+      "type": "object",
+      "properties": {
+        "commentId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "postId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "authorAvatar": { "type": "string", "minLength": 0, "maxLength": 65000 },
+        "content": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "commentId",
+        "postId",
+        "authorUid",
+        "authorName",
+        "authorAvatar",
+        "content",
+        "visibility",
+        "createdAt"
+      ]
+    },
+    "ForumChatMessage": {
+      "title": "ForumChatMessage",
+      "description": "Real-time community chat message inside Forum.",
+      "type": "object",
+      "properties": {
+        "messageId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "authorUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "authorAvatar": { "type": "string", "minLength": 0, "maxLength": 65000 },
+        "text": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "messageId",
+        "authorUid",
+        "authorName",
+        "authorAvatar",
+        "text",
+        "visibility",
+        "createdAt"
+      ]
+    },
     "AdminRole": {
       "title": "AdminRole",
       "description": "Trusted admin role assignment record.",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "minLength": 3,
-          "maxLength": 150
-        },
-        "role": {
-          "type": "string",
-          "enum": ["admin"]
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "minLength": 3, "maxLength": 150 },
+        "role": { "type": "string", "enum": ["admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "createdAt"]
     },
     "SheetsSyncConfig": {
       "title": "SheetsSyncConfig",
-      "description": "Admin-only Google Sheets export metadata and target spreadsheet link.",
+      "description": "Admin-only Google Sheets export metadata.",
       "type": "object",
       "properties": {
-        "spreadsheetId": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "spreadsheetUrl": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 300
-        },
-        "spreadsheetTitle": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 150
-        },
-        "lastSyncedAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "lastSyncedCount": {
-          "type": "number"
-        },
-        "updatedByUid": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        }
+        "spreadsheetId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "spreadsheetUrl": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "spreadsheetTitle": { "type": "string", "minLength": 1, "maxLength": 150 },
+        "lastSyncedAt": { "type": "string", "format": "date-time" },
+        "lastSyncedCount": { "type": "number" },
+        "updatedByUid": { "type": "string", "minLength": 1, "maxLength": 128 }
       },
       "required": [
         "spreadsheetId",
@@ -136,11 +216,23 @@
   "firestore": {
     "/members/{userId}": {
       "schema": { "$ref": "#/entities/MemberProfile" },
-      "description": "Member account email and backed-up app activity keyed by Firebase Auth UID."
+      "description": "Member account email, personal home customization, and activity backup."
+    },
+    "/forum_posts/{postId}": {
+      "schema": { "$ref": "#/entities/ForumPost" },
+      "description": "Public forum posts."
+    },
+    "/forum_posts/{postId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/ForumComment" },
+      "description": "Comments under forum posts."
+    },
+    "/forum_chat/{messageId}": {
+      "schema": { "$ref": "#/entities/ForumChatMessage" },
+      "description": "Real-time community chat messages."
     },
     "/admins/{userId}": {
       "schema": { "$ref": "#/entities/AdminRole" },
-      "description": "Trusted admin role lookup documents managed strictly by the bootstrapped admin."
+      "description": "Trusted admin role lookup documents."
     },
     "/app_config/{configId}": {
       "schema": { "$ref": "#/entities/SheetsSyncConfig" },

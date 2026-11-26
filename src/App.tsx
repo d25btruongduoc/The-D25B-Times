@@ -1,18 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import { ExternalLink } from 'lucide-react';
 import { AiChatWidget } from './components/AiChatWidget';
 import { DeadlineView } from './components/DeadlineView';
+import { ForumView } from './components/ForumView';
 import { HandbookView } from './components/HandbookView';
 import { Header } from './components/Header';
 import { HomeView } from './components/HomeView';
 import { LibraryView } from './components/LibraryView';
 import { MemberModal } from './components/MemberModal';
+import { PersonalHomeView } from './components/PersonalHomeView';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { StudyView } from './components/StudyView';
 import { CONTACTS, HandbookTab, NavSection } from './data/d25bData';
-import { auth } from './firebase';
+import { getCachedDriveAccessToken, subscribeAuthState } from './firebase';
+import { saveBackupToGoogleDrive } from './services/driveBackupService';
 import {
+  getMemberDisplayLabel,
   getMemberProfile,
   MemberProfile,
   PreferredScheduleClass,
@@ -97,7 +101,7 @@ export default function App() {
 
   // Listen to Firebase Auth state & load verified member cloud profile
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = subscribeAuthState((user) => {
       setCurrentUser(user);
       if (!user) {
         setMemberProfile(null);
@@ -111,6 +115,9 @@ export default function App() {
       void getMemberProfile(user.uid)
         .then((loaded) => {
           setMemberProfile(loaded);
+          if (loaded?.consentAccepted) {
+            setConsentAccepted(true);
+          }
           if (loaded && !hasHydratedCloudRef.current) {
             hasHydratedCloudRef.current = true;
             setCompletedDeadlines((prev) =>
@@ -125,7 +132,7 @@ export default function App() {
           }
         })
         .catch(() => {
-          // Handled cleanly via handleFirestoreError logs / ErrorBoundary when needed
+          // Handled cleanly via handleFirestoreError logs
         });
     });
     return () => unsubscribe();
@@ -143,14 +150,46 @@ export default function App() {
     }
 
     const timer = window.setTimeout(() => {
-      void syncMemberActivityBackup(currentUser.uid, {
-        completedDeadlineIds: completedDeadlines,
-        bookmarkedCourseIds,
-        preferredClass,
-      }).catch(() => {
-        // Non-blocking background sync
-      });
-    }, 1200);
+      void (async () => {
+        try {
+          await syncMemberActivityBackup(currentUser.uid, {
+            completedDeadlineIds: completedDeadlines,
+            bookmarkedCourseIds,
+            preferredClass,
+          });
+
+          const driveToken = getCachedDriveAccessToken();
+          if (memberProfile.autoDriveBackup && driveToken) {
+            const driveRes = await saveBackupToGoogleDrive(
+              driveToken,
+              {
+                version: 1,
+                backedUpAt: new Date().toISOString(),
+                completedDeadlineIds: completedDeadlines,
+                bookmarkedCourseIds,
+                preferredClass,
+                personalHome: {
+                  customName: memberProfile.customName,
+                  bio: memberProfile.bio,
+                  accentColor: memberProfile.accentColor,
+                },
+              },
+              memberProfile.driveBackupFileId
+            );
+            if (driveRes.fileId && driveRes.fileId !== memberProfile.driveBackupFileId) {
+              await syncMemberActivityBackup(currentUser.uid, {
+                completedDeadlineIds: completedDeadlines,
+                bookmarkedCourseIds,
+                preferredClass,
+                driveBackupFileId: driveRes.fileId,
+              });
+            }
+          }
+        } catch {
+          // Non-blocking background sync
+        }
+      })();
+    }, 1400);
 
     return () => window.clearTimeout(timer);
   }, [currentUser, memberProfile, completedDeadlines, bookmarkedCourseIds, preferredClass]);
@@ -193,7 +232,10 @@ export default function App() {
     setPreferredClass(data.preferredClass);
   };
 
-  const memberLabel = memberProfile?.email || currentUser?.email || null;
+  const memberLabel = currentUser
+    ? getMemberDisplayLabel(memberProfile, currentUser.email, currentUser.displayName)
+    : null;
+  const memberAvatar = memberProfile?.avatarUrl || currentUser?.photoURL || '';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#070B14] text-slate-100 tech-grid-bg">
@@ -201,6 +243,7 @@ export default function App() {
         activeSection={activeSection}
         onNavigate={(section) => handleNavigate(section)}
         memberLabel={memberLabel}
+        memberAvatar={memberAvatar}
         isMemberSignedIn={Boolean(currentUser)}
         onOpenMemberModal={() => setIsMemberModalOpen(true)}
       />
@@ -236,6 +279,31 @@ export default function App() {
         )}
 
         {activeSection === 'library' && <LibraryView />}
+
+        {activeSection === 'forum' && (
+          <ForumView
+            user={currentUser}
+            profile={memberProfile}
+            onOpenMemberModal={() => setIsMemberModalOpen(true)}
+          />
+        )}
+
+        {activeSection === 'profile' && (
+          <PersonalHomeView
+            user={currentUser}
+            profile={memberProfile}
+            onProfileUpdated={setMemberProfile}
+            consentAccepted={consentAccepted}
+            onChangeConsent={setConsentAccepted}
+            onOpenPrivacyPolicy={() => setIsPrivacyModalOpen(true)}
+            onOpenMemberModal={() => setIsMemberModalOpen(true)}
+            completedDeadlineIds={completedDeadlines}
+            bookmarkedCourseIds={bookmarkedCourseIds}
+            preferredClass={preferredClass}
+            onRestoreActivity={handleRestoreCloudActivity}
+            onNavigate={(section, opts) => handleNavigate(section, opts)}
+          />
+        )}
       </main>
 
       <AiChatWidget onNavigate={handleNavigate} />
@@ -249,6 +317,10 @@ export default function App() {
         consentAccepted={consentAccepted}
         onChangeConsent={setConsentAccepted}
         onOpenPrivacyPolicy={() => setIsPrivacyModalOpen(true)}
+        onOpenPersonalHome={() => {
+          setIsMemberModalOpen(false);
+          handleNavigate('profile');
+        }}
         completedDeadlineIds={completedDeadlines}
         bookmarkedCourseIds={bookmarkedCourseIds}
         preferredClass={preferredClass}

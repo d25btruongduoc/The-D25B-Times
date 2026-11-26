@@ -10,19 +10,30 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from '../firebase';
+import {
+  ensureFirebaseReady,
+  handleFirestoreError,
+  OperationType,
+} from '../firebase';
 import { ScheduleClassCode } from '../data/d25bData';
 
 export const ADMIN_EMAIL = 'd25b.truongduoc@gmail.com';
 
-export type AuthProviderId = 'password' | 'facebook.com' | 'google.com';
+export type AuthProviderId = 'password' | 'google.com';
 export type PreferredScheduleClass = 'ALL' | ScheduleClassCode;
+export type PersonalAccentColor = 'cyan' | 'emerald' | 'violet' | 'amber';
 
 export interface MemberProfile {
   uid: string;
   email: string;
   authProvider: AuthProviderId;
   consentAccepted: boolean;
+  customName: string;
+  avatarUrl: string;
+  bio: string;
+  accentColor: PersonalAccentColor;
+  autoDriveBackup: boolean;
+  driveBackupFileId: string;
   completedDeadlineIds: string[];
   bookmarkedCourseIds: string[];
   preferredClass: PreferredScheduleClass;
@@ -44,17 +55,46 @@ export function isVerifiedAdminEmail(email?: string | null, emailVerified?: bool
 }
 
 export function detectAuthProviderId(providerIds: string[]): AuthProviderId {
-  if (providerIds.includes('facebook.com')) return 'facebook.com';
   if (providerIds.includes('google.com')) return 'google.com';
   return 'password';
 }
 
+export function getMemberDisplayLabel(
+  profile: MemberProfile | null,
+  fallbackEmail?: string | null,
+  fallbackGoogleName?: string | null
+): string {
+  if (profile?.customName?.trim()) return profile.customName.trim();
+  if (fallbackGoogleName?.trim()) return fallbackGoogleName.trim();
+  if (profile?.email) return profile.email.split('@')[0];
+  if (fallbackEmail) return fallbackEmail.split('@')[0];
+  return 'Thành viên';
+}
+
 export async function getMemberProfile(uid: string): Promise<MemberProfile | null> {
+  const { db } = await ensureFirebaseReady();
   const path = `members/${uid}`;
   try {
     const snap = await getDoc(doc(db, 'members', uid));
     if (!snap.exists()) return null;
-    return snap.data() as MemberProfile;
+    const raw = snap.data() as Partial<MemberProfile>;
+    return {
+      uid: raw.uid || uid,
+      email: raw.email || '',
+      authProvider: raw.authProvider === 'google.com' ? 'google.com' : 'password',
+      consentAccepted: Boolean(raw.consentAccepted),
+      customName: raw.customName || '',
+      avatarUrl: raw.avatarUrl || '',
+      bio: raw.bio || '',
+      accentColor: raw.accentColor || 'cyan',
+      autoDriveBackup: Boolean(raw.autoDriveBackup),
+      driveBackupFileId: raw.driveBackupFileId || '',
+      completedDeadlineIds: Array.isArray(raw.completedDeadlineIds) ? raw.completedDeadlineIds : [],
+      bookmarkedCourseIds: Array.isArray(raw.bookmarkedCourseIds) ? raw.bookmarkedCourseIds : [],
+      preferredClass: raw.preferredClass || 'ALL',
+      createdAt: raw.createdAt || null,
+      updatedAt: raw.updatedAt || null,
+    };
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
   }
@@ -65,10 +105,17 @@ export async function saveMemberProfile(params: {
   email: string;
   authProvider: AuthProviderId;
   consentAccepted: boolean;
+  customName?: string;
+  avatarUrl?: string;
+  bio?: string;
+  accentColor?: PersonalAccentColor;
+  autoDriveBackup?: boolean;
+  driveBackupFileId?: string;
   completedDeadlineIds: string[];
   bookmarkedCourseIds: string[];
   preferredClass: PreferredScheduleClass;
 }): Promise<MemberProfile> {
+  const { db } = await ensureFirebaseReady();
   const path = `members/${params.uid}`;
   const docRef = doc(db, 'members', params.uid);
 
@@ -82,6 +129,14 @@ export async function saveMemberProfile(params: {
     handleFirestoreError(error, OperationType.GET, path);
   }
 
+  const prev = existingSnap.exists() ? (existingSnap.data() as Partial<MemberProfile>) : null;
+  const customName = (params.customName ?? prev?.customName ?? '').trim().slice(0, 60);
+  const avatarUrl = (params.avatarUrl ?? prev?.avatarUrl ?? '').trim().slice(0, 65000);
+  const bio = (params.bio ?? prev?.bio ?? '').trim().slice(0, 240);
+  const accentColor = params.accentColor ?? prev?.accentColor ?? 'cyan';
+  const autoDriveBackup = params.autoDriveBackup ?? Boolean(prev?.autoDriveBackup);
+  const driveBackupFileId = (params.driveBackupFileId ?? prev?.driveBackupFileId ?? '').slice(0, 128);
+
   if (!existingSnap.exists()) {
     try {
       await setDoc(docRef, {
@@ -89,6 +144,12 @@ export async function saveMemberProfile(params: {
         email: params.email.trim().slice(0, 150),
         authProvider: params.authProvider,
         consentAccepted: params.consentAccepted,
+        customName,
+        avatarUrl,
+        bio,
+        accentColor,
+        autoDriveBackup,
+        driveBackupFileId,
         completedDeadlineIds: boundedCompleted,
         bookmarkedCourseIds: boundedBookmarks,
         preferredClass: params.preferredClass,
@@ -102,6 +163,12 @@ export async function saveMemberProfile(params: {
     try {
       await updateDoc(docRef, {
         email: params.email.trim().slice(0, 150),
+        customName,
+        avatarUrl,
+        bio,
+        accentColor,
+        autoDriveBackup,
+        driveBackupFileId,
         completedDeadlineIds: boundedCompleted,
         bookmarkedCourseIds: boundedBookmarks,
         preferredClass: params.preferredClass,
@@ -125,22 +192,33 @@ export async function syncMemberActivityBackup(
     completedDeadlineIds: string[];
     bookmarkedCourseIds: string[];
     preferredClass: PreferredScheduleClass;
+    driveBackupFileId?: string;
+    autoDriveBackup?: boolean;
   }
 ): Promise<void> {
+  const { db } = await ensureFirebaseReady();
   const path = `members/${uid}`;
   try {
-    await updateDoc(doc(db, 'members', uid), {
+    const payload: Record<string, unknown> = {
       completedDeadlineIds: activity.completedDeadlineIds.slice(0, 150),
       bookmarkedCourseIds: activity.bookmarkedCourseIds.slice(0, 80),
       preferredClass: activity.preferredClass,
       updatedAt: serverTimestamp(),
-    });
+    };
+    if (typeof activity.driveBackupFileId === 'string') {
+      payload.driveBackupFileId = activity.driveBackupFileId.slice(0, 128);
+    }
+    if (typeof activity.autoDriveBackup === 'boolean') {
+      payload.autoDriveBackup = activity.autoDriveBackup;
+    }
+    await updateDoc(doc(db, 'members', uid), payload);
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
 }
 
 export async function listAllMembersForAdmin(): Promise<MemberProfile[]> {
+  const { db } = await ensureFirebaseReady();
   const path = 'members';
   try {
     const q = query(collection(db, 'members'), orderBy('updatedAt', 'desc'));
@@ -152,6 +230,7 @@ export async function listAllMembersForAdmin(): Promise<MemberProfile[]> {
 }
 
 export async function getSheetsSyncConfig(): Promise<SheetsSyncConfig | null> {
+  const { db } = await ensureFirebaseReady();
   const path = 'app_config/sheets_sync';
   try {
     const snap = await getDoc(doc(db, 'app_config', 'sheets_sync'));
@@ -168,6 +247,7 @@ export async function saveSheetsSyncConfig(config: {
   spreadsheetTitle: string;
   lastSyncedCount: number;
 }): Promise<void> {
+  const { auth, db } = await ensureFirebaseReady();
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error('Chưa đăng nhập quản trị viên.');
   const path = 'app_config/sheets_sync';
@@ -186,14 +266,7 @@ export async function saveSheetsSyncConfig(config: {
 }
 
 function formatProviderLabel(provider: AuthProviderId): string {
-  switch (provider) {
-    case 'facebook.com':
-      return 'Facebook';
-    case 'google.com':
-      return 'Google';
-    default:
-      return 'Email/Mật khẩu';
-  }
+  return provider === 'google.com' ? 'Google' : 'Email/Mật khẩu';
 }
 
 function formatTimestampIso(ts?: Timestamp | null): string {
@@ -294,7 +367,7 @@ export async function exportMembersToGoogleSheets(
       'Đã đồng ý sao lưu',
       'Số deadline hoàn thành',
       'Số học phần đánh dấu',
-      'Lớp lịch ưu tiên',
+      'Bộ lọc lịch HK2',
       'Thời điểm đăng ký',
       'Sao lưu gần nhất',
     ],

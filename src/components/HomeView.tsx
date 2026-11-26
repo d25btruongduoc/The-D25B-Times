@@ -63,16 +63,27 @@ export function HomeView({
               </div>
 
               <h2 className="mt-3 font-heading text-3xl sm:text-4xl font-bold text-slate-50 leading-tight">
-                Gom toàn bộ học liệu, biểu mẫu và lịch trình D25B về một nơi dễ tra cứu
+                Chào mừng bạn đến với The D25B Times!
               </h2>
 
               <div className="mt-5 space-y-4 text-[15px] sm:text-base text-slate-300 leading-relaxed max-w-2xl">
                 <p className="drop-cap">
-                  Hello anh em, lại là Minh Huy đây! Sau thời gian thử nghiệm đăng thông tin lên Facebook để mọi người đỡ bị trôi file, tụi mình nhận ra việc tìm lại link phúc khảo, đăng ký nghỉ học hay đề cương môn vẫn còn rối rắm vì bài viết trôi quá nhanh.
+                  Chào mọi người, mình là Minh Huy - Lớp trưởng lớp D25B, đồng thời là người sáng lập và phát triển The D25B Times.
                 </p>
                 <p>
-                  The D25B Times ra đời để giải quyết triệt để chuyện đó: tổ chức lại hơn 45 mục học phần, quy chế khảo thí, lịch đăng ký tín chỉ và hướng dẫn sinh hoạt tại 41–43 Đinh Tiên Hoàng sao cho bạn chỉ cần 1–2 lần bấm là tìm thấy ngay thứ mình cần.
+                  Website được xây dựng với mục tiêu trở thành một trang thông tin tổng hợp, cung cấp những nội dung cần thiết và hữu ích nhất cho các thành viên lớp D25B. Với phương châm đặt trải nghiệm người dùng lên hàng đầu, mình luôn hướng đến việc tối ưu hóa khả năng tra cứu, tiếp cận thông tin và sử dụng các tiện ích trên nền tảng.
                 </p>
+                <p>
+                  Bên cạnh những nội dung dành riêng cho D25B, website còn tích hợp nhiều tính năng và học liệu khác, mở rộng cơ hội tiếp cận cho các bạn đồng khóa cũng như các em khóa dưới có nhu cầu tìm hiểu và sử dụng.
+                </p>
+                <p>
+                  Hiện tại, The D25B Times đã chính thức bước sang phiên bản 3.0. Đây là một trong những đợt nâng cấp lớn, với kỳ vọng mang đến trải nghiệm thuận tiện, trực quan và hiệu quả hơn, đặc biệt trong việc tìm kiếm và khai thác thông tin.
+                </p>
+                <p>
+                  Vậy nên, mình hy vọng rằng The D25B Times sẽ tiếp tục là một người bạn đồng hành hữu ích trong quá trình học tập và sinh hoạt của mọi người.
+                </p>
+                <p>Xin cảm ơn!</p>
+                <p className="font-semibold text-slate-100">Minh Huy</p>
               </div>
             </div>
 

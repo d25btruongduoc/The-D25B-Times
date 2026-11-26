@@ -9,29 +9,37 @@ import {
   Download,
   ExternalLink,
   FileSpreadsheet,
+  HardDrive,
   KeyRound,
   LogOut,
   MailCheck,
   RefreshCw,
+  UserCircle2,
   Users,
   X,
 } from 'lucide-react';
 import {
+  authorizeGoogleDriveToken,
   authorizeGoogleSheetsToken,
   formatFirebaseAuthError,
+  getCachedDriveAccessToken,
   getCachedSheetsAccessToken,
   refreshCurrentUserVerification,
   registerWithEmailMember,
   resendVerificationEmailForCurrentUser,
   signInWithEmailMember,
-  signInWithFacebookMember,
   signInWithGoogleMember,
   signOutMember,
 } from '../firebase';
 import {
+  DriveAuthExpiredError,
+  saveBackupToGoogleDrive,
+} from '../services/driveBackupService';
+import {
   ADMIN_EMAIL,
   detectAuthProviderId,
   exportMembersToGoogleSheets,
+  getMemberDisplayLabel,
   getSheetsSyncConfig,
   isVerifiedAdminEmail,
   listAllMembersForAdmin,
@@ -51,6 +59,7 @@ interface MemberModalProps {
   consentAccepted: boolean;
   onChangeConsent: (accepted: boolean) => void;
   onOpenPrivacyPolicy: () => void;
+  onOpenPersonalHome?: () => void;
   completedDeadlineIds: string[];
   bookmarkedCourseIds: string[];
   preferredClass: PreferredScheduleClass;
@@ -84,14 +93,6 @@ function GoogleLogoSvg() {
   );
 }
 
-function FacebookLogoSvg() {
-  return (
-    <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M22.675 0h-21.35C.597 0 0 .597 0 1.325v21.351C0 23.403.597 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.325V1.325C24 .597 23.403 0 22.675 0z" />
-    </svg>
-  );
-}
-
 export function MemberModal({
   isOpen,
   onClose,
@@ -101,6 +102,7 @@ export function MemberModal({
   consentAccepted,
   onChangeConsent,
   onOpenPrivacyPolicy,
+  onOpenPersonalHome,
   completedDeadlineIds,
   bookmarkedCourseIds,
   preferredClass,
@@ -249,10 +251,54 @@ export function MemberModal({
     setSuccessMsg(null);
     setBusy(true);
     try {
-      const signedIn = await signInWithGoogleMember(false);
+      const requestDrive = consentAccepted;
+      const signedIn = await signInWithGoogleMember({
+        requestDriveScope: requestDrive,
+      });
       if (signedIn.emailVerified && consentAccepted) {
-        await persistVerifiedProfile(signedIn, true);
-        setSuccessMsg('Đã đăng nhập bằng Google và đồng bộ bản sao lưu.');
+        let driveFileId = '';
+        if (requestDrive) {
+          const driveToken = getCachedDriveAccessToken();
+          if (driveToken) {
+            try {
+              const driveRes = await saveBackupToGoogleDrive(driveToken, {
+                version: 1,
+                backedUpAt: new Date().toISOString(),
+                completedDeadlineIds,
+                bookmarkedCourseIds,
+                preferredClass,
+                personalHome: {
+                  customName: signedIn.displayName || signedIn.email?.split('@')[0] || '',
+                  bio: '',
+                  accentColor: 'cyan',
+                },
+              });
+              driveFileId = driveRes.fileId;
+            } catch {
+              // Drive upload optional if user declined Drive scope
+            }
+          }
+        }
+        const providerId = detectAuthProviderId(
+          signedIn.providerData.map((p) => p.providerId)
+        );
+        const saved = await saveMemberProfile({
+          uid: signedIn.uid,
+          email: signedIn.email || '',
+          authProvider: providerId,
+          consentAccepted: true,
+          autoDriveBackup: Boolean(driveFileId),
+          driveBackupFileId: driveFileId || undefined,
+          completedDeadlineIds,
+          bookmarkedCourseIds,
+          preferredClass,
+        });
+        onProfileUpdated(saved);
+        setSuccessMsg(
+          driveFileId
+            ? 'Đã đăng nhập bằng Google, đồng bộ Cloud và sao lưu lên Google Drive của bạn.'
+            : 'Đã đăng nhập bằng Google và đồng bộ bản sao lưu lên Cloud.'
+        );
       } else {
         setSuccessMsg(
           'Đã đăng nhập bằng Google. Hãy đánh dấu đồng ý theo Chính sách quyền riêng tư bên trên để bật sao lưu đám mây.'
@@ -265,26 +311,71 @@ export function MemberModal({
     }
   };
 
-  const handleFacebookSignIn = async () => {
+  const handleBackupToGoogleDrive = async () => {
+    if (!user || !user.emailVerified) return;
     setErrorMsg(null);
     setSuccessMsg(null);
     setBusy(true);
     try {
-      const signedIn = await signInWithFacebookMember();
-      if (signedIn.emailVerified && consentAccepted) {
-        await persistVerifiedProfile(signedIn, true);
-        setSuccessMsg('Đã đăng nhập bằng Facebook và đồng bộ bản sao lưu.');
-      } else if (!signedIn.emailVerified) {
-        setSuccessMsg(
-          'Đã đăng nhập bằng Facebook. Lưu ý: để sao lưu lên đám mây an toàn, tài khoản cần có email đã xác minh.'
-        );
-      } else {
-        setSuccessMsg(
-          'Đã đăng nhập bằng Facebook. Hãy đánh dấu đồng ý theo Chính sách quyền riêng tư để bật sao lưu.'
-        );
+      let token = getCachedDriveAccessToken();
+      if (!token) {
+        token = await authorizeGoogleDriveToken();
       }
+      const payload = {
+        version: 1 as const,
+        backedUpAt: new Date().toISOString(),
+        completedDeadlineIds,
+        bookmarkedCourseIds,
+        preferredClass,
+        personalHome: {
+          customName: getMemberDisplayLabel(profile, user.email, user.displayName),
+          bio: profile?.bio || '',
+          accentColor: profile?.accentColor || 'cyan',
+        },
+      };
+
+      let driveRes;
+      try {
+        driveRes = await saveBackupToGoogleDrive(
+          token,
+          payload,
+          profile?.driveBackupFileId
+        );
+      } catch (err) {
+        if (err instanceof DriveAuthExpiredError) {
+          token = await authorizeGoogleDriveToken();
+          driveRes = await saveBackupToGoogleDrive(
+            token,
+            payload,
+            profile?.driveBackupFileId
+          );
+        } else {
+          throw err;
+        }
+      }
+
+      if (consentAccepted) {
+        const providerId = detectAuthProviderId(
+          user.providerData.map((p) => p.providerId)
+        );
+        const saved = await saveMemberProfile({
+          uid: user.uid,
+          email: user.email || '',
+          authProvider: providerId,
+          consentAccepted: true,
+          autoDriveBackup: true,
+          driveBackupFileId: driveRes.fileId,
+          completedDeadlineIds,
+          bookmarkedCourseIds,
+          preferredClass,
+        });
+        onProfileUpdated(saved);
+      }
+      setSuccessMsg('Đã sao lưu bản dữ liệu (The_D25B_Times_Backup.json) vào Google Drive của bạn.');
     } catch (err) {
-      setErrorMsg(formatFirebaseAuthError(err));
+      setErrorMsg(
+        err instanceof Error ? err.message : 'Không thể sao lưu lên Google Drive.'
+      );
     } finally {
       setBusy(false);
     }
@@ -574,26 +665,16 @@ export function MemberModal({
           {/* Case 1: Not signed in */}
           {!user && (
             <div className="space-y-5">
-              {/* Social Sign-In Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Google Sign-In Button (Official Light Style) */}
+              <div>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={handleGoogleSignIn}
-                  className="flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg bg-[#FFFFFF] text-[#1F1F1F] border border-[#747775] hover:bg-slate-100 text-sm font-medium transition-colors disabled:opacity-60 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg bg-[#FFFFFF] text-[#1F1F1F] border border-[#747775] hover:bg-slate-100 text-sm font-medium transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   <GoogleLogoSvg />
                   <span>Tiếp tục với Google</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={handleFacebookSignIn}
-                  className="flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg bg-[#1877F2] hover:bg-[#166FE5] text-white text-sm font-medium transition-colors disabled:opacity-60 cursor-pointer"
-                >
-                  <FacebookLogoSvg />
-                  <span>Tiếp tục với Facebook</span>
                 </button>
               </div>
 
@@ -721,15 +802,27 @@ export function MemberModal({
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={handleSignOut}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#131C31] border border-slate-700 hover:border-rose-400/50 text-xs font-medium text-slate-200 hover:text-rose-300 transition-colors cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Đăng xuất</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {onOpenPersonalHome && (
+                    <button
+                      type="button"
+                      onClick={onOpenPersonalHome}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-400/15 border border-cyan-400/40 hover:bg-cyan-400/25 text-xs font-semibold text-cyan-200 transition-colors cursor-pointer"
+                    >
+                      <UserCircle2 className="w-3.5 h-3.5" />
+                      <span>Trang chủ cá nhân</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={handleSignOut}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#131C31] border border-slate-700 hover:border-rose-400/50 text-xs font-medium text-slate-200 hover:text-rose-300 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
               </div>
 
               {/* Email verification prompt if unverified */}
@@ -810,21 +903,33 @@ export function MemberModal({
                 )}
               </div>
 
-              <button
-                type="button"
-                disabled={busy || !user.emailVerified || !consentAccepted}
-                onClick={handleSaveAndBackup}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <CloudUpload className="w-4 h-4" />
-                <span>
-                  {busy
-                    ? 'Đang sao lưu...'
-                    : profile
-                    ? 'Sao lưu hoạt động ngay lên đám mây'
-                    : 'Kích hoạt & Sao lưu hoạt động lên đám mây'}
-                </span>
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  disabled={busy || !user.emailVerified || !consentAccepted}
+                  onClick={handleSaveAndBackup}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <CloudUpload className="w-4 h-4" />
+                  <span>
+                    {busy
+                      ? 'Đang sao lưu...'
+                      : profile
+                      ? 'Sao lưu Cloud ngay'
+                      : 'Kích hoạt sao lưu Cloud'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={busy || !user.emailVerified || !consentAccepted}
+                  onClick={handleBackupToGoogleDrive}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-400/15 border border-emerald-400/40 hover:bg-emerald-400/25 text-emerald-200 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <HardDrive className="w-4 h-4" />
+                  <span>Sao lưu lên Google Drive</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -965,11 +1070,7 @@ export function MemberModal({
                             {m.email}
                           </td>
                           <td className="px-3 py-2.5 text-slate-300">
-                            {m.authProvider === 'facebook.com'
-                              ? 'Facebook'
-                              : m.authProvider === 'google.com'
-                              ? 'Google'
-                              : 'Email'}
+                            {m.authProvider === 'google.com' ? 'Google' : 'Email'}
                           </td>
                           <td className="px-3 py-2.5 text-right font-mono text-slate-300">
                             {m.completedDeadlineIds?.length ?? 0} DL ·{' '}

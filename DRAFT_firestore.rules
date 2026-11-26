@@ -50,7 +50,11 @@ service cloud.firestore {
     }
 
     function isValidAuthProvider(val) {
-      return val is string && val.size() >= 8 && val.size() <= 20 && val in ['password', 'facebook.com', 'google.com'];
+      return val is string && val.size() >= 8 && val.size() <= 12 && val in ['password', 'google.com'];
+    }
+
+    function isValidAccentColor(val) {
+      return val is string && val.size() >= 4 && val.size() <= 10 && val in ['cyan', 'emerald', 'violet', 'amber'];
     }
 
     function isValidBoundedIdList(listVal, maxLen) {
@@ -65,6 +69,12 @@ service cloud.firestore {
           'email',
           'authProvider',
           'consentAccepted',
+          'customName',
+          'avatarUrl',
+          'bio',
+          'accentColor',
+          'autoDriveBackup',
+          'driveBackupFileId',
           'completedDeadlineIds',
           'bookmarkedCourseIds',
           'preferredClass',
@@ -76,6 +86,12 @@ service cloud.firestore {
           'email',
           'authProvider',
           'consentAccepted',
+          'customName',
+          'avatarUrl',
+          'bio',
+          'accentColor',
+          'autoDriveBackup',
+          'driveBackupFileId',
           'completedDeadlineIds',
           'bookmarkedCourseIds',
           'preferredClass',
@@ -86,11 +102,116 @@ service cloud.firestore {
         data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
         isValidAuthProvider(data.authProvider) &&
         data.consentAccepted is bool && data.consentAccepted == true &&
+        data.customName is string && data.customName.size() <= 60 &&
+        data.avatarUrl is string && data.avatarUrl.size() <= 65000 &&
+        data.bio is string && data.bio.size() <= 240 &&
+        isValidAccentColor(data.accentColor) &&
+        data.autoDriveBackup is bool &&
+        data.driveBackupFileId is string && data.driveBackupFileId.size() <= 128 &&
         isValidBoundedIdList(data.completedDeadlineIds, 150) &&
         isValidBoundedIdList(data.bookmarkedCourseIds, 80) &&
         isValidPreferredClass(data.preferredClass) &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
+    }
+
+    function isValidForumPost(data, postId) {
+      return data.keys().hasAll([
+          'postId',
+          'authorUid',
+          'authorName',
+          'authorAvatar',
+          'category',
+          'title',
+          'content',
+          'attachmentUrl',
+          'visibility',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'postId',
+          'authorUid',
+          'authorName',
+          'authorAvatar',
+          'category',
+          'title',
+          'content',
+          'attachmentUrl',
+          'visibility',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.postId is string && data.postId.size() >= 1 && data.postId.size() <= 128 && data.postId == postId &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 60 &&
+        data.authorAvatar is string && data.authorAvatar.size() <= 65000 &&
+        data.category is string && data.category.size() >= 4 && data.category.size() <= 12 && data.category in ['study', 'resources', 'chat', 'team'] &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 3000 &&
+        data.attachmentUrl is string && data.attachmentUrl.size() <= 300 &&
+        data.visibility is string && data.visibility.size() == 6 && data.visibility == 'public' &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidForumComment(data, postId, commentId) {
+      return data.keys().hasAll([
+          'commentId',
+          'postId',
+          'authorUid',
+          'authorName',
+          'authorAvatar',
+          'content',
+          'visibility',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'commentId',
+          'postId',
+          'authorUid',
+          'authorName',
+          'authorAvatar',
+          'content',
+          'visibility',
+          'createdAt'
+        ]) &&
+        data.commentId is string && data.commentId.size() >= 1 && data.commentId.size() <= 128 && data.commentId == commentId &&
+        data.postId is string && data.postId.size() >= 1 && data.postId.size() <= 128 && data.postId == postId &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 60 &&
+        data.authorAvatar is string && data.authorAvatar.size() <= 65000 &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 1000 &&
+        data.visibility is string && data.visibility.size() == 6 && data.visibility == 'public' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidForumChatMessage(data, messageId) {
+      return data.keys().hasAll([
+          'messageId',
+          'authorUid',
+          'authorName',
+          'authorAvatar',
+          'text',
+          'visibility',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'messageId',
+          'authorUid',
+          'authorName',
+          'authorAvatar',
+          'text',
+          'visibility',
+          'createdAt'
+        ]) &&
+        data.messageId is string && data.messageId.size() >= 1 && data.messageId.size() <= 128 && data.messageId == messageId &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 60 &&
+        data.authorAvatar is string && data.authorAvatar.size() <= 65000 &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 800 &&
+        data.visibility is string && data.visibility.size() == 6 && data.visibility == 'public' &&
+        data.createdAt is timestamp;
     }
 
     function isValidAdminRole(data, userId) {
@@ -128,7 +249,7 @@ service cloud.firestore {
         data.updatedByUid == request.auth.uid;
     }
 
-    // 1. Member email & backed-up app activity (PII strictly isolated)
+    // 1. Member email, personal home & backed-up app activity (PII strictly isolated)
     match /members/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
       allow list: if isVerifiedUser() && (existing().uid == request.auth.uid || isBootstrappedAdmin());
@@ -152,6 +273,12 @@ service cloud.firestore {
             isOwner(userId) &&
             incoming().diff(existing()).affectedKeys().hasOnly([
               'email',
+              'customName',
+              'avatarUrl',
+              'bio',
+              'accentColor',
+              'autoDriveBackup',
+              'driveBackupFileId',
               'completedDeadlineIds',
               'bookmarkedCourseIds',
               'preferredClass',
@@ -163,7 +290,83 @@ service cloud.firestore {
       allow delete: if isValidId(userId) && isAdmin();
     }
 
-    // 2. Trusted admin role documents (no self-assignment)
+    // 2. Public Community Forum Posts (no PII stored)
+    match /forum_posts/{postId} {
+      allow get: if isValidId(postId) && existing().visibility == 'public';
+      allow list: if existing().visibility == 'public';
+
+      allow create: if isValidId(postId) &&
+        isVerifiedUser() &&
+        isValidForumPost(incoming(), postId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(postId) &&
+        isVerifiedUser() &&
+        isValidForumPost(incoming(), postId) &&
+        incoming().postId == existing().postId &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (
+            request.auth.uid == existing().authorUid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'authorName',
+              'authorAvatar',
+              'category',
+              'title',
+              'content',
+              'attachmentUrl',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isValidId(postId) && isVerifiedUser() && (
+        isAdmin() || request.auth.uid == existing().authorUid
+      );
+
+      // Pillar 1 Master Gate: comments require existing parent post
+      match /comments/{commentId} {
+        allow get: if isValidId(postId) && isValidId(commentId) &&
+          exists(/databases/$(database)/documents/forum_posts/$(postId)) &&
+          existing().visibility == 'public';
+        allow list: if existing().visibility == 'public';
+
+        allow create: if isValidId(postId) && isValidId(commentId) &&
+          isVerifiedUser() &&
+          isValidForumComment(incoming(), postId, commentId) &&
+          incoming().authorUid == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/forum_posts/$(postId));
+
+        allow delete: if isValidId(postId) && isValidId(commentId) &&
+          isVerifiedUser() &&
+          exists(/databases/$(database)/documents/forum_posts/$(postId)) && (
+            isAdmin() || request.auth.uid == existing().authorUid
+          );
+      }
+    }
+
+    // 3. Real-time Forum Community Chat (no PII stored)
+    match /forum_chat/{messageId} {
+      allow get: if isValidId(messageId) && existing().visibility == 'public';
+      allow list: if existing().visibility == 'public';
+
+      allow create: if isValidId(messageId) &&
+        isVerifiedUser() &&
+        isValidForumChatMessage(incoming(), messageId) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time;
+
+      allow delete: if isValidId(messageId) && isVerifiedUser() && (
+        isAdmin() || request.auth.uid == existing().authorUid
+      );
+    }
+
+    // 4. Trusted admin role documents (no self-assignment)
     match /admins/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isBootstrappedAdmin());
       allow list: if isBootstrappedAdmin();
@@ -179,7 +382,7 @@ service cloud.firestore {
       allow delete: if isValidId(userId) && isBootstrappedAdmin();
     }
 
-    // 3. Admin-only Google Sheets export config
+    // 5. Admin-only Google Sheets export config
     match /app_config/{configId} {
       allow get: if isValidId(configId) && isAdmin();
       allow list: if isBootstrappedAdmin();
@@ -202,7 +405,7 @@ service cloud.firestore {
       allow delete: if isValidId(configId) && isBootstrappedAdmin();
     }
 
-    // 4. Connection probe document for startup health check
+    // 6. Connection probe document for startup health check
     match /test/{docId} {
       allow get: if isValidId(docId) && docId == 'connection';
     }

@@ -76,10 +76,13 @@ export function PrivacyPolicyModal({
             </h3>
             <ul className="list-disc list-inside space-y-1 text-slate-300">
               <li>
-                <strong>Thông tin tài khoản:</strong> Địa chỉ email đăng nhập, mã định danh người dùng và phương thức xác thực (Email/Mật khẩu, Google hoặc Facebook).
+                <strong>Thông tin tài khoản:</strong> Địa chỉ email đăng nhập, mã định danh người dùng và phương thức xác thực (Email/Mật khẩu hoặc Google).
               </li>
               <li>
-                <strong>Dữ liệu sao lưu hoạt động:</strong> Các mốc deadline bạn đã đánh dấu hoàn thành, các học phần đã đánh dấu lưu và bộ lọc lịch HK2 bạn đang chọn.
+                <strong>Trang chủ cá nhân &amp; Diễn đàn (tùy chọn):</strong> Tên hiển thị/biệt danh, ảnh đại diện hoặc tiểu sử ngắn do chính bạn tự tùy chỉnh để hiển thị trên góc cá nhân và bài viết Diễn đàn.
+              </li>
+              <li>
+                <strong>Dữ liệu sao lưu hoạt động:</strong> Các mốc deadline bạn đã đánh dấu hoàn thành, các học phần đã đánh dấu lưu và bộ lọc lịch HK2 bạn đang chọn (đồng bộ Cloud và tùy chọn sao lưu tệp <span className="font-mono text-cyan-300">The_D25B_Times_Backup.json</span> về Google Drive cá nhân của bạn).
               </li>
             </ul>
           </section>
@@ -100,7 +103,7 @@ export function PrivacyPolicyModal({
               <span>4. Bảo mật &amp; Kiểm soát dữ liệu</span>
             </h3>
             <p>
-              Dữ liệu của mỗi tài khoản được cô lập bằng quy tắc bảo mật Firebase và chỉ được đồng bộ sau khi địa chỉ email được xác minh. Thành viên khác không thể xem email hay tiến độ của bạn.
+              Dữ liệu tài khoản và bản sao lưu Cloud được cô lập theo từng tài khoản bằng quy tắc bảo mật Firebase và chỉ được kích hoạt sau khi xác minh email. Các bài đăng và tin nhắn trong Diễn đàn không hiển thị địa chỉ email của bạn.
             </p>
           </section>
 

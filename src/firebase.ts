@@ -1,7 +1,7 @@
-import { initializeApp } from 'firebase/app';
+import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import {
+  Auth,
   createUserWithEmailAndPassword,
-  FacebookAuthProvider,
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -12,10 +12,14 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
-import firebaseConfigJson from '../firebase-applet-config.json';
+import {
+  doc,
+  Firestore,
+  getDocFromServer,
+  getFirestore,
+} from 'firebase/firestore';
 
-interface FirebaseAppletConfig {
+interface FirebaseRuntimeConfig {
   projectId: string;
   appId: string;
   apiKey: string;
@@ -25,24 +29,17 @@ interface FirebaseAppletConfig {
   messagingSenderId?: string;
 }
 
-const firebaseConfig = firebaseConfigJson as FirebaseAppletConfig;
-
-const app = initializeApp(firebaseConfig);
-export const db = firebaseConfig.firestoreDatabaseId
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
-export const auth = getAuth(app);
-
 export const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
-// Strictly in-memory OAuth access token cache (never persisted to localStorage/sessionStorage)
+let appInstance: FirebaseApp | null = null;
+let authInstance: Auth | null = null;
+let dbInstance: Firestore | null = null;
+let initPromise: Promise<{ app: FirebaseApp; auth: Auth; db: Firestore }> | null = null;
+
+// Strictly in-memory OAuth access token caches (never persisted to localStorage/sessionStorage)
 let cachedSheetsAccessToken: string | null = null;
-
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    cachedSheetsAccessToken = null;
-  }
-});
+let cachedDriveAccessToken: string | null = null;
 
 export function getCachedSheetsAccessToken(): string | null {
   return cachedSheetsAccessToken;
@@ -52,7 +49,43 @@ export function clearCachedSheetsAccessToken(): void {
   cachedSheetsAccessToken = null;
 }
 
-export async function testConnection(): Promise<void> {
+export function getCachedDriveAccessToken(): string | null {
+  return cachedDriveAccessToken;
+}
+
+export function clearCachedDriveAccessToken(): void {
+  cachedDriveAccessToken = null;
+}
+
+async function loadFirebaseRuntimeConfig(): Promise<FirebaseRuntimeConfig> {
+  const envKey = import.meta.env.VITE_FIREBASE_API_KEY as string | undefined;
+  const envProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined;
+  const envAppId = import.meta.env.VITE_FIREBASE_APP_ID as string | undefined;
+  const envAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined;
+
+  if (envKey && envProjectId && envAppId && envAuthDomain) {
+    return {
+      apiKey: envKey,
+      projectId: envProjectId,
+      appId: envAppId,
+      authDomain: envAuthDomain,
+      firestoreDatabaseId:
+        (import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID as string | undefined) || '',
+      storageBucket:
+        (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined) || '',
+      messagingSenderId:
+        (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined) || '',
+    };
+  }
+
+  const res = await fetch('/api/firebase-config', { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error('Không thể tải cấu hình Firebase từ máy chủ.');
+  }
+  return (await res.json()) as FirebaseRuntimeConfig;
+}
+
+async function testConnection(db: Firestore): Promise<void> {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
@@ -62,7 +95,88 @@ export async function testConnection(): Promise<void> {
   }
 }
 
-void testConnection();
+export async function ensureFirebaseReady(): Promise<{
+  app: FirebaseApp;
+  auth: Auth;
+  db: Firestore;
+}> {
+  if (appInstance && authInstance && dbInstance) {
+    return { app: appInstance, auth: authInstance, db: dbInstance };
+  }
+  if (!initPromise) {
+    initPromise = (async () => {
+      const cfg = await loadFirebaseRuntimeConfig();
+      const existingApps = getApps();
+      const app =
+        existingApps.length > 0
+          ? existingApps[0]
+          : initializeApp({
+              apiKey: cfg.apiKey,
+              authDomain: cfg.authDomain,
+              projectId: cfg.projectId,
+              appId: cfg.appId,
+              storageBucket: cfg.storageBucket || undefined,
+              messagingSenderId: cfg.messagingSenderId || undefined,
+            });
+
+      const db = cfg.firestoreDatabaseId
+        ? getFirestore(app, cfg.firestoreDatabaseId)
+        : getFirestore(app);
+      const auth = getAuth(app);
+
+      onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          cachedSheetsAccessToken = null;
+          cachedDriveAccessToken = null;
+        }
+      });
+
+      appInstance = app;
+      authInstance = auth;
+      dbInstance = db;
+
+      void testConnection(db);
+      return { app, auth, db };
+    })().catch((err) => {
+      initPromise = null;
+      throw err;
+    });
+  }
+  return initPromise;
+}
+
+export function getFirebaseAuth(): Auth {
+  if (!authInstance) {
+    throw new Error('Firebase Auth chưa được khởi tạo.');
+  }
+  return authInstance;
+}
+
+export function getFirebaseDb(): Firestore {
+  if (!dbInstance) {
+    throw new Error('Firestore chưa được khởi tạo.');
+  }
+  return dbInstance;
+}
+
+export function subscribeAuthState(callback: (user: User | null) => void): () => void {
+  let active = true;
+  let unsubscribeInner: (() => void) | null = null;
+
+  void ensureFirebaseReady()
+    .then(({ auth }) => {
+      if (!active) return;
+      unsubscribeInner = onAuthStateChanged(auth, callback);
+    })
+    .catch((err) => {
+      console.error('Firebase initialization failed:', err);
+    });
+
+  return () => {
+    active = false;
+    if (unsubscribeInner) unsubscribeInner();
+  };
+}
 
 export enum OperationType {
   CREATE = 'create',
@@ -95,16 +209,17 @@ export function handleFirestoreError(
   operationType: OperationType,
   path: string | null
 ): never {
+  const currentUser = authInstance?.currentUser;
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
+      userId: currentUser?.uid,
+      email: currentUser?.email,
+      emailVerified: currentUser?.emailVerified,
+      isAnonymous: currentUser?.isAnonymous,
+      tenantId: currentUser?.tenantId,
       providerInfo:
-        auth.currentUser?.providerData?.map((provider) => ({
+        currentUser?.providerData?.map((provider) => ({
           providerId: provider.providerId,
           email: provider.email,
         })) || [],
@@ -116,21 +231,52 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
-export async function signInWithGoogleMember(requestSheetsScope = false): Promise<User> {
+export async function signInWithGoogleMember(options?: {
+  requestDriveScope?: boolean;
+  requestSheetsScope?: boolean;
+}): Promise<User> {
+  const { auth } = await ensureFirebaseReady();
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  if (requestSheetsScope) {
+  if (options?.requestDriveScope) {
+    provider.addScope(DRIVE_FILE_SCOPE);
+  }
+  if (options?.requestSheetsScope) {
     provider.addScope(SHEETS_SCOPE);
   }
   const result = await signInWithPopup(auth, provider);
   const credential = GoogleAuthProvider.credentialFromResult(result);
-  if (credential?.accessToken && requestSheetsScope) {
-    cachedSheetsAccessToken = credential.accessToken;
+  if (credential?.accessToken) {
+    if (options?.requestDriveScope) {
+      cachedDriveAccessToken = credential.accessToken;
+    }
+    if (options?.requestSheetsScope) {
+      cachedSheetsAccessToken = credential.accessToken;
+    }
   }
   return result.user;
 }
 
+export async function authorizeGoogleDriveToken(): Promise<string> {
+  const { auth } = await ensureFirebaseReady();
+  const provider = new GoogleAuthProvider();
+  provider.addScope(DRIVE_FILE_SCOPE);
+  provider.setCustomParameters({
+    prompt: 'consent',
+    ...(auth.currentUser?.email ? { login_hint: auth.currentUser.email } : {}),
+  });
+  const result = await signInWithPopup(auth, provider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  const token = credential?.accessToken;
+  if (!token) {
+    throw new Error('Không nhận được mã truy cập Google Drive. Vui lòng thử lại.');
+  }
+  cachedDriveAccessToken = token;
+  return token;
+}
+
 export async function authorizeGoogleSheetsToken(): Promise<string> {
+  const { auth } = await ensureFirebaseReady();
   const provider = new GoogleAuthProvider();
   provider.addScope(SHEETS_SCOPE);
   provider.setCustomParameters({
@@ -147,29 +293,24 @@ export async function authorizeGoogleSheetsToken(): Promise<string> {
   return token;
 }
 
-export async function signInWithFacebookMember(): Promise<User> {
-  const provider = new FacebookAuthProvider();
-  provider.addScope('email');
-  provider.addScope('public_profile');
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
-}
-
 export async function registerWithEmailMember(
   email: string,
   password: string
 ): Promise<User> {
+  const { auth } = await ensureFirebaseReady();
   const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
   await sendEmailVerification(credential.user);
   return credential.user;
 }
 
 export async function signInWithEmailMember(email: string, password: string): Promise<User> {
+  const { auth } = await ensureFirebaseReady();
   const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
   return credential.user;
 }
 
 export async function resendVerificationEmailForCurrentUser(): Promise<void> {
+  const { auth } = await ensureFirebaseReady();
   if (!auth.currentUser) {
     throw new Error('Bạn chưa đăng nhập.');
   }
@@ -177,6 +318,7 @@ export async function resendVerificationEmailForCurrentUser(): Promise<void> {
 }
 
 export async function refreshCurrentUserVerification(): Promise<User | null> {
+  const { auth } = await ensureFirebaseReady();
   if (!auth.currentUser) return null;
   await reload(auth.currentUser);
   await auth.currentUser.getIdToken(true);
@@ -184,7 +326,9 @@ export async function refreshCurrentUserVerification(): Promise<User | null> {
 }
 
 export async function signOutMember(): Promise<void> {
+  const { auth } = await ensureFirebaseReady();
   cachedSheetsAccessToken = null;
+  cachedDriveAccessToken = null;
   await signOut(auth);
 }
 
@@ -196,7 +340,7 @@ export function formatFirebaseAuthError(error: unknown): string {
 
   switch (code) {
     case 'auth/email-already-in-use':
-      return 'Email này đã được đăng ký. Hãy chuyển sang tab Đăng nhập hoặc dùng Google/Facebook.';
+      return 'Email này đã được đăng ký. Hãy chuyển sang tab Đăng nhập hoặc dùng Google.';
     case 'auth/invalid-email':
       return 'Địa chỉ email không hợp lệ.';
     case 'auth/weak-password':
@@ -210,7 +354,7 @@ export function formatFirebaseAuthError(error: unknown): string {
     case 'auth/popup-blocked':
       return 'Trình duyệt đang chặn cửa sổ bật lên (popup). Hãy cho phép popup rồi thử lại.';
     case 'auth/account-exists-with-different-credential':
-      return 'Email này đã liên kết với phương thức đăng nhập khác (ví dụ Google hoặc Email/Mật khẩu).';
+      return 'Email này đã liên kết với phương thức đăng nhập khác.';
     case 'auth/operation-not-allowed':
       return 'Phương thức đăng nhập này chưa được bật trong Firebase Console của dự án. Quản trị viên cần bật nhà cung cấp này trong Authentication > Sign-in method.';
     case 'auth/too-many-requests':

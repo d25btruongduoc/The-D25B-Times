@@ -1,4 +1,11 @@
-export type NavSection = 'home' | 'study' | 'deadline' | 'handbook' | 'library';
+export type NavSection =
+  | 'home'
+  | 'study'
+  | 'deadline'
+  | 'handbook'
+  | 'library'
+  | 'forum'
+  | 'profile';
 
 export {
   HK2_HOLIDAYS,

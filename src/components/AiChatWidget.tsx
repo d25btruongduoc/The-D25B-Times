@@ -4,16 +4,30 @@ import {
   Bot,
   MessageCircle,
   RotateCcw,
+  Search,
   Send,
+  Sparkles,
   X,
 } from 'lucide-react';
-import { HandbookTab, NavSection, SEARCH_INDEX } from '../data/d25bData';
+import { HandbookTab, NavSection, SearchIndexItem } from '../data/d25bData';
+import {
+  findRelatedLinks,
+  isReasoningQuery,
+  tryResolveQueryLocally,
+} from '../utils/localKnowledgeSearch';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   text: string;
-  relatedItems?: typeof SEARCH_INDEX;
+  source?: 'local' | 'ai';
+  originalQuery?: string;
+  relatedItems?: SearchIndexItem[];
+}
+
+interface QuotaInfo {
+  remaining: number;
+  limit: number;
 }
 
 interface AiChatWidgetProps {
@@ -27,31 +41,8 @@ const STARTER_PROMPTS = [
   'Quy trình phúc khảo điểm thi & chỗ nộp đơn?',
   'Cú pháp chuyển khoản BHYT 9 tháng và số TK?',
   'So sánh quy định nộp bài HPT1 và PTN 2?',
-  'Khung giờ ĐKHP của khóa D25 & gửi xe UMPSP?',
+  'Lịch học HK2 lớp D25B & gửi xe UMPSP?',
 ];
-
-function findRelatedLinks(queryText: string) {
-  const tokens = queryText
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((t) => t.length >= 2);
-  if (tokens.length === 0) return [];
-
-  const scored = SEARCH_INDEX.map((item) => {
-    const haystack = `${item.title} ${item.subtitle} ${item.keywords}`.toLowerCase();
-    const score = tokens.reduce(
-      (acc, token) => (haystack.includes(token) ? acc + 1 : acc),
-      0
-    );
-    return { item, score };
-  })
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map((entry) => entry.item);
-
-  return scored;
-}
 
 function renderFormattedLines(text: string) {
   const lines = text.split('\n');
@@ -95,13 +86,27 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 60);
-    }
+    if (!isOpen) return;
+    setTimeout(() => inputRef.current?.focus(), 60);
+    fetch('/api/ai-quota')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { remaining?: number; limit?: number } | null) => {
+        if (
+          data &&
+          typeof data.remaining === 'number' &&
+          typeof data.limit === 'number'
+        ) {
+          setQuota({ remaining: data.remaining, limit: data.limit });
+        }
+      })
+      .catch(() => {
+        // non-blocking
+      });
   }, [isOpen]);
 
   useEffect(() => {
@@ -110,22 +115,57 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
     }
   }, [messages, isLoading]);
 
-  const sendMessage = async (rawText: string) => {
+  const sendMessage = async (rawText: string, forceAi = false) => {
     const trimmed = rawText.trim();
     if (!trimmed || isLoading) return;
 
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`,
       role: 'user',
-      text: trimmed,
+      text: forceAi ? `Phân tích sâu bằng AI: ${trimmed}` : trimmed,
     };
 
     const nextHistory = [...messages, userMsg];
     setMessages(nextHistory);
-    setInput('');
+    if (!forceAi) {
+      setInput('');
+    }
     setErrorMsg(null);
-    setIsLoading(true);
 
+    // Try zero-token local search first; only auto-call AI if query explicitly asks for reasoning
+    if (!forceAi) {
+      const localRes = tryResolveQueryLocally(trimmed);
+      if (localRes.handledLocally) {
+        const localMsg: ChatMessage = {
+          id: `l-${Date.now()}`,
+          role: 'assistant',
+          source: 'local',
+          originalQuery: trimmed,
+          text: localRes.answerText,
+          relatedItems: localRes.relatedItems,
+        };
+        setMessages((prev) => [...prev, localMsg]);
+        return;
+      }
+
+      if (!isReasoningQuery(trimmed)) {
+        const fallbackMsg: ChatMessage = {
+          id: `l-${Date.now()}`,
+          role: 'assistant',
+          source: 'local',
+          originalQuery: trimmed,
+          text:
+            localRes.relatedItems.length > 0
+              ? 'Hệ thống đã tự dò các mục gần khớp bên dưới mà **chưa tốn lượt AI**. Nếu vẫn cần phân tích sâu hơn, bạn bấm nút **Hỏi AI phân tích thêm** bên dưới.'
+              : 'Chưa thấy từ khóa khớp chính xác trong kho nội bộ (không tốn lượt AI). Bạn có thể thử từ khóa ngắn gọn hơn (VD: `BHYT`, `phúc khảo`, `D25B`, `gửi xe`, `HPT1`) hoặc bấm **Hỏi AI phân tích thêm**.',
+          relatedItems: localRes.relatedItems,
+        };
+        setMessages((prev) => [...prev, fallbackMsg]);
+        return;
+      }
+    }
+
+    setIsLoading(true);
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -135,7 +175,19 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
         }),
       });
 
-      const data = (await res.json()) as { reply?: string; error?: string };
+      const data = (await res.json()) as {
+        reply?: string;
+        error?: string;
+        quota?: QuotaInfo;
+      };
+
+      if (data.quota) {
+        setQuota({
+          remaining: data.quota.remaining,
+          limit: data.quota.limit,
+        });
+      }
+
       if (!res.ok || !data.reply) {
         throw new Error(
           data.error || 'Không thể kết nối Quản trang AI lúc này. Vui lòng thử lại.'
@@ -146,6 +198,7 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
       const aiMsg: ChatMessage = {
         id: `a-${Date.now()}`,
         role: 'assistant',
+        source: 'ai',
         text: data.reply,
         relatedItems,
       };
@@ -163,7 +216,7 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(input);
+    void sendMessage(input, false);
   };
 
   const quickLocalSuggestions = useMemo(() => {
@@ -189,7 +242,9 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
                   Quản trang AI · The D25B Times
                 </h2>
                 <p className="text-[11px] text-slate-400 truncate">
-                  Phân tích &amp; tìm kiếm học vụ thông minh
+                  {quota
+                    ? `Tự dò nhanh miễn phí · Còn ${quota.remaining}/${quota.limit} lượt AI hôm nay`
+                    : 'Tự dò tìm thông tin · AI cho câu hỏi tư duy'}
                 </p>
               </div>
             </div>
@@ -227,8 +282,13 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
           >
             {messages.length === 0 ? (
               <div className="space-y-4">
-                <div className="bg-[#0E1525] border border-slate-800 rounded-lg p-3.5 text-xs sm:text-sm text-slate-200 leading-relaxed">
-                  Kính chào quý ngài! Tôi là <strong className="text-cyan-300">Quản trang AI của The D25B Times</strong>, được chủ nhân <strong className="text-slate-50">Minh Huy</strong> đào tạo và vận hành. Xin phép được cung cấp cho quý ngài mọi thông tin học vụ, tài liệu và lịch trình cần thiết tại đây!
+                <div className="bg-[#0E1525] border border-slate-800 rounded-lg p-3.5 text-xs sm:text-sm text-slate-200 leading-relaxed space-y-1.5">
+                  <p>
+                    Kính chào quý ngài! Tôi là <strong className="text-cyan-300">Quản trang AI của The D25B Times</strong>.
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Các câu hỏi tra cứu thông tin, lịch học hay quy chế sẽ được hệ thống <strong>tự dò nội bộ (không tốn lượt AI)</strong>. Gemini AI chỉ kích hoạt cho câu hỏi so sánh, phân tích hoặc lập kế hoạch.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -240,7 +300,7 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
                       <button
                         key={prompt}
                         type="button"
-                        onClick={() => sendMessage(prompt)}
+                        onClick={() => void sendMessage(prompt, false)}
                         className="text-left px-3 py-2 text-xs font-medium text-slate-200 bg-[#0E1525] hover:bg-[#131C31] border border-slate-800 hover:border-cyan-500/40 rounded-lg transition-colors cursor-pointer"
                       >
                         {prompt}
@@ -257,6 +317,28 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
                     msg.role === 'user' ? 'items-end' : 'items-start'
                   }`}
                 >
+                  {msg.role === 'assistant' && (
+                    <span
+                      className={`mb-1 inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border ${
+                        msg.source === 'local'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                          : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                      }`}
+                    >
+                      {msg.source === 'local' ? (
+                        <>
+                          <Search className="w-2.5 h-2.5" />
+                          <span>Tra cứu nội bộ · 0 lượt AI</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>Phân tích AI</span>
+                        </>
+                      )}
+                    </span>
+                  )}
+
                   <div
                     className={`max-w-[88%] rounded-lg px-3.5 py-2.5 text-xs sm:text-sm space-y-1 ${
                       msg.role === 'user'
@@ -270,6 +352,20 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
                       renderFormattedLines(msg.text)
                     )}
                   </div>
+
+                  {msg.role === 'assistant' &&
+                    msg.source === 'local' &&
+                    msg.originalQuery && (
+                      <button
+                        type="button"
+                        disabled={isLoading || (quota !== null && quota.remaining <= 0)}
+                        onClick={() => void sendMessage(msg.originalQuery!, true)}
+                        className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#131C31] border border-slate-700 hover:border-cyan-400/50 text-[11px] font-medium text-cyan-300 disabled:opacity-40 cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Hỏi AI phân tích thêm</span>
+                      </button>
+                    )}
 
                   {msg.role === 'assistant' &&
                     msg.relatedItems &&
@@ -298,7 +394,7 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
             {isLoading && (
               <div className="flex items-start">
                 <div className="bg-[#0E1525] border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs text-cyan-300">
-                  Đang phân tích và truy xuất dữ liệu...
+                  Đang phân tích bằng Quản trang AI...
                 </div>
               </div>
             )}
@@ -337,7 +433,7 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Hỏi Quản trang AI hoặc tìm thông tin..."
+              placeholder="Tìm thông tin hoặc hỏi AI tư duy..."
               aria-label="Nhập câu hỏi cho Quản trang AI"
               className="flex-1 px-3 py-2 text-xs sm:text-sm bg-[#070B14] border border-slate-700 rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
             />
