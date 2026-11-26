@@ -22,13 +22,42 @@ import {
   SCHEDULE_CLASS_META,
   SCHOOL_NOTICES,
 } from './src/data/d25bData';
+import {
+  buildIndex,
+  normalize,
+  renderHits,
+  routeQuestion,
+  search,
+  type Hit,
+} from './server/localSearch';
+import { createTtlCache, createUsageLimits } from './server/usageLimits';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function envNumber(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === '') return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
 const PORT = Number(process.env.PORT || 3000);
-const AI_DAILY_USER_LIMIT = Math.max(1, Number(process.env.AI_DAILY_USER_LIMIT || 5));
-const AI_DAILY_GLOBAL_LIMIT = Math.max(5, Number(process.env.AI_DAILY_GLOBAL_LIMIT || 50));
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const AI_DAILY_USER_LIMIT = Math.max(
+  1,
+  envNumber(process.env.AI_DAILY_USER_LIMIT || process.env.AI_DAILY_LIMIT_PER_IP, 5)
+);
+const AI_DAILY_GLOBAL_LIMIT = Math.max(
+  5,
+  envNumber(process.env.AI_DAILY_GLOBAL_LIMIT || process.env.AI_DAILY_LIMIT_GLOBAL, 50)
+);
+const CHAT_REQUESTS_PER_MINUTE = Math.max(
+  5,
+  envNumber(process.env.CHAT_REQUESTS_PER_MINUTE, 20)
+);
+const AI_HISTORY_MESSAGES = Math.max(2, envNumber(process.env.AI_HISTORY_MESSAGES, 4));
+const AI_MAX_OUTPUT_TOKENS = Math.max(250, envNumber(process.env.AI_MAX_OUTPUT_TOKENS, 700));
+const TRUST_PROXY_HOPS = envNumber(process.env.TRUST_PROXY_HOPS, 1);
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -39,28 +68,30 @@ const ai = new GoogleGenAI({
   },
 });
 
+const CAMPUS_RULES = {
+  address: '41-43 Đinh Tiên Hoàng, Phường Sài Gòn, TP.HCM',
+  parking:
+    'Từ 01/01/2026 miễn phí 100% gửi xe cho SV khi xuất trình Thẻ SV (06h00-21h00 T2-T7, CN 06h00-17h00, nghỉ Lễ/Tết). Không để laptop/ví trong cốp. Tới cổng dắt bộ 5m. Dịp lễ gửi tại Diamond Plaza, KHXHNV, Hoa Lư hoặc Thảo Cầm Viên.',
+  unionOffice:
+    'VP Đoàn TN - Hội SV (T2-T6, 08h00-16h30): mượn áo Blouse, mũ BH, bơm xe miễn phí, in ấn 250đ/tờ (tối đa 20 tờ/lần).',
+  blouseAndLab:
+    'Không mặc Blouse ra đường. Chuẩn bị 2 áo Blouse. PTN bắt buộc giày/dép kín mũi; bộ môn Hóa yêu cầu cắt ngắn móng tay, không nails giả.',
+  bhyt:
+    'BHYT 9 tháng (01/04/2026-31/12/2026), hạn 16h00 20/03/2026, mức đóng 473.850đ. Form https://forms.office.com/r/KMcXuG6ytD. CK Vietcombank 0511000099999 (CN Sài Thành) hoặc Vietinbank 112000093351 (CN 5), cú pháp: BHYT MSSV HO VA TEN.',
+  examRegrading:
+    'Phúc khảo trong vòng 7 ngày từ ngày công bố điểm. Nộp đơn trực tiếp Phòng KH-ĐT-ĐN (sảnh tầng trệt tòa hành chính, cạnh Vườn Dược Liệu).',
+  hpt1Report:
+    'Báo cáo TH HPT1 viết tay 100%, ghép 1 PDF nộp OneDrive + Form trong 24h. Tên file: THHPT1_D25_Nhóm_Mã bài_STT_Họ Tên_MSSV.',
+  ptn2Rules:
+    'TT Hóa Lý Dược (PTN 2 - BM CNDP): Ca sáng 7h30, chiều 13h00. Trễ >15 phút tính vắng.',
+};
+
 const CORE_CAMPUS_KNOWLEDGE = {
   contacts: CONTACTS,
   registrationWindows: REGISTRATION_WINDOWS,
   scheduleClasses: SCHEDULE_CLASS_META,
   holidays: HK2_HOLIDAYS,
-  campusRules: {
-    address: '41-43 Đinh Tiên Hoàng, Phường Sài Gòn, TP.HCM',
-    parking:
-      'Từ 01/01/2026 miễn phí 100% gửi xe cho SV khi xuất trình Thẻ SV (06h00-21h00 T2-T7, CN 06h00-17h00, nghỉ Lễ/Tết). Không để laptop/ví trong cốp. Tới cổng dắt bộ 5m.',
-    unionOffice:
-      'VP Đoàn TN - Hội SV (T2-T6, 08h00-16h30): mượn áo Blouse, mũ BH, bơm xe miễn phí, in ấn 250đ/tờ (tối đa 20 tờ/lần).',
-    blouseAndLab:
-      'Không mặc Blouse ra đường. Chuẩn bị 2 áo Blouse. PTN bắt buộc giày/dép kín mũi; bộ môn Hóa yêu cầu cắt ngắn móng tay, không nails giả.',
-    bhyt:
-      'BHYT 9 tháng (01/04/2026-31/12/2026), hạn 16h00 20/03/2026, mức đóng 473.850đ. Form https://forms.office.com/r/KMcXuG6ytD. CK Vietcombank 0511000099999 (CN Sài Thành) hoặc Vietinbank 112000093351 (CN 5), cú pháp: BHYT MSSV HO VA TEN.',
-    examRegrading:
-      'Phúc khảo trong vòng 7 ngày từ ngày công bố điểm. Nộp đơn trực tiếp Phòng KH-ĐT-ĐN (sảnh tầng trệt tòa hành chính, cạnh Vườn Dược Liệu).',
-    hpt1Report:
-      'Báo cáo TH HPT1 viết tay 100%, ghép 1 PDF nộp OneDrive + Form trong 24h. Tên file: THHPT1_D25_Nhóm_Mã bài_STT_Họ Tên_MSSV.',
-    ptn2Rules:
-      'TT Hóa Lý Dược (PTN 2 - BM CNDP): Ca sáng 7h30, chiều 13h00. Trễ >15 phút tính vắng.',
-  },
+  campusRules: CAMPUS_RULES,
   deadlinesSummary: DEADLINES.map((d) => ({
     title: d.title,
     dueLabel: d.dueLabel,
@@ -83,42 +114,92 @@ const CORE_CAMPUS_KNOWLEDGE = {
   })),
 };
 
-function buildScopedKnowledgeContext(queryText: string): string {
-  const q = queryText.toLowerCase();
-  const matchedCourses = COURSES.filter((c) =>
-    `${c.name} ${c.shortCode} ${c.summary}`.toLowerCase().includes(q.slice(0, 12)) ||
-    q.split(/\s+/).some((tok) => tok.length >= 3 && `${c.name} ${c.shortCode}`.toLowerCase().includes(tok))
-  ).slice(0, 4);
+// Local IDF search index across all official datasets (used both for zero-AI lookup and compact AI grounding)
+const SECTION_LABELS: Record<string, string> = {
+  contacts: 'Liên hệ',
+  deadlines: 'Deadline',
+  appUpdates: 'Cập nhật ứng dụng',
+  schoolNotices: 'Thông báo trường',
+  registrationWindows: 'Đăng ký học phần',
+  hk2Schedule2026_2027: 'Lịch học HK2',
+  courses: 'Học phần',
+  examForms: 'Biểu mẫu khảo thí',
+  orientationDocs: 'Tài liệu định hướng',
+  drlLinks: 'Điểm rèn luyện',
+  drlGuides: 'Hướng dẫn ĐRL',
+  library: 'Thư viện',
+  externalStudyTools: 'Công cụ học tập',
+  campusRules: 'Quy định & tiện ích',
+};
 
-  const matchedClass = (['d25a', 'd25b', 'd25c', 'd25d'] as const).find((cls) => q.includes(cls));
-  const matchedSchedule = matchedClass
-    ? HK2_SCHEDULE_EVENTS.filter((e) => e.classCode.toLowerCase() === matchedClass).slice(0, 20)
-    : [];
+const CAMPUS_RULE_TITLES: Record<keyof typeof CAMPUS_RULES, string> = {
+  address: 'Địa chỉ trường',
+  parking: 'Gửi xe',
+  unionOffice: 'Văn phòng Đoàn – Hội SV',
+  blouseAndLab: 'Áo Blouse & phòng thí nghiệm',
+  bhyt: 'Bảo hiểm y tế (BHYT)',
+  examRegrading: 'Phúc khảo',
+  hpt1Report: 'Báo cáo thực hành Hóa Phân Tích 1',
+  ptn2Rules: 'Quy định PTN 2 (Hóa Lý Dược)',
+};
+
+const searchIndex = buildIndex(
+  {
+    contacts: CONTACTS,
+    deadlines: DEADLINES,
+    appUpdates: APP_UPDATES,
+    schoolNotices: SCHOOL_NOTICES,
+    registrationWindows: REGISTRATION_WINDOWS,
+    hk2Schedule2026_2027: {
+      classes: SCHEDULE_CLASS_META,
+      holidays: HK2_HOLIDAYS,
+      events: HK2_SCHEDULE_EVENTS,
+    },
+    courses: COURSES.map((c) => ({
+      name: c.name,
+      shortCode: c.shortCode,
+      semester: c.semester,
+      category: c.category,
+      summary: c.summary,
+      highlights: c.highlights,
+      chapters: c.chapters,
+      sections: c.sections,
+      facultyContact: c.facultyContact,
+      links: c.links,
+    })),
+    examForms: EXAM_FORMS,
+    orientationDocs: ORIENTATION_DOCS,
+    drlLinks: DRL_LINKS,
+    drlGuides: DRL_GUIDES,
+    library: LIBRARY_RESOURCES,
+    externalStudyTools: EXTERNAL_STUDY_TOOLS,
+    campusRules: (Object.keys(CAMPUS_RULES) as Array<keyof typeof CAMPUS_RULES>).map((key) => ({
+      title: CAMPUS_RULE_TITLES[key],
+      text: CAMPUS_RULES[key],
+    })),
+  },
+  SECTION_LABELS
+);
+
+function buildScopedKnowledgeContext(queryText: string, hits: Hit[]): string {
+  const retrievedHits = (hits.length > 0 ? hits : search(searchIndex, queryText, 6)).map((h) => ({
+    nhom: h.doc.sectionLabel,
+    ...h.doc.raw,
+  }));
 
   return JSON.stringify({
     ...CORE_CAMPUS_KNOWLEDGE,
-    matchedCourseDetails: matchedCourses.map((c) => ({
-      name: c.name,
-      shortCode: c.shortCode,
-      highlights: c.highlights,
-      sections: c.sections,
-      links: c.links,
-    })),
-    ...(matchedSchedule.length > 0 ? { matchedScheduleSample: matchedSchedule } : {}),
-    orientationDocsCount: ORIENTATION_DOCS.length,
-    libraryCount: LIBRARY_RESOURCES.length,
-    drlGuidesCount: DRL_GUIDES.length,
-    externalStudyToolsCount: EXTERNAL_STUDY_TOOLS.length,
+    retrievedDetails: retrievedHits,
   });
 }
 
-function buildSystemInstruction(queryText: string): string {
+function buildSystemInstruction(queryText: string, hits: Hit[]): string {
   return `Bạn là Quản trang AI của cổng thông tin "The D25B Times" (Trường Dược – ĐHYD TP.HCM).
 Phong cách: Xưng "tôi", gọi người dùng là "quý ngài". Trả lời tiếng Việt thật ngắn gọn, súc tích bằng gạch đầu dòng, tối đa ~180 chữ.
 Chỉ dùng dữ liệu chính thức dưới đây; nếu thiếu hãy gợi ý liên hệ Minh Huy (Zalo 0888103145) hoặc Phòng KH-ĐT-ĐN (ree.sp@ump.edu.vn). Không bịa link hay thời hạn.
 
 DỮ LIỆU LIÊN QUAN:
-${buildScopedKnowledgeContext(queryText)}`;
+${buildScopedKnowledgeContext(queryText, hits)}`;
 }
 
 interface ChatMessageInput {
@@ -126,20 +207,14 @@ interface ChatMessageInput {
   text: string;
 }
 
-// Daily free-tier AI quota & response cache (resets every calendar day in Asia/Ho_Chi_Minh)
-let quotaDateKey = '';
-let globalDailyAiCount = 0;
-const userDailyAiCounts = new Map<string, number>();
-const dailyResponseCache = new Map<string, string>();
+const limits = createUsageLimits({
+  aiPerIpPerDay: AI_DAILY_USER_LIMIT,
+  aiGlobalPerDay: AI_DAILY_GLOBAL_LIMIT,
+  requestsPerMinute: CHAT_REQUESTS_PER_MINUTE,
+});
 
-function getVnDateKey(): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-}
+// Cache identical single-turn AI responses for 24h to conserve free-tier quota
+const aiCache = createTtlCache<string>(250, 24 * 60 * 60_000);
 
 function getClientKey(req: Request): string {
   const forwarded = req.headers['x-forwarded-for'];
@@ -149,30 +224,6 @@ function getClientKey(req: Request): string {
       ? forwarded.split(',')[0]
       : req.ip || 'anonymous';
   return raw.trim() || 'anonymous';
-}
-
-function ensureQuotaDateCurrent(): string {
-  const today = getVnDateKey();
-  if (quotaDateKey !== today) {
-    quotaDateKey = today;
-    globalDailyAiCount = 0;
-    userDailyAiCounts.clear();
-    dailyResponseCache.clear();
-  }
-  return today;
-}
-
-function getQuotaSnapshot(clientKey: string) {
-  const dateKey = ensureQuotaDateCurrent();
-  const used = userDailyAiCounts.get(clientKey) || 0;
-  return {
-    dateKey,
-    used,
-    limit: AI_DAILY_USER_LIMIT,
-    remaining: Math.max(0, AI_DAILY_USER_LIMIT - used),
-    globalRemaining: Math.max(0, AI_DAILY_GLOBAL_LIMIT - globalDailyAiCount),
-    globalLimit: AI_DAILY_GLOBAL_LIMIT,
-  };
 }
 
 function readPublicFirebaseConfig(): Record<string, string> | null {
@@ -224,7 +275,11 @@ function readPublicFirebaseConfig(): Record<string, string> | null {
 
 async function startServer() {
   const app = express();
+  app.set('trust proxy', TRUST_PROXY_HOPS);
   app.use(express.json({ limit: '64kb' }));
+
+  const sweepTimer = setInterval(() => limits.sweep(), 10 * 60_000);
+  (sweepTimer as unknown as { unref?: () => void }).unref?.();
 
   // Runtime public Firebase client configuration endpoint (keeps keys out of Git)
   app.get('/api/firebase-config', (_req: Request, res: Response) => {
@@ -239,35 +294,16 @@ async function startServer() {
 
   app.get('/api/ai-quota', (req: Request, res: Response) => {
     const clientKey = getClientKey(req);
-    res.json(getQuotaSnapshot(clientKey));
+    res.json(limits.peek(clientKey));
   });
 
   app.post('/api/chat', async (req: Request, res: Response) => {
     const clientKey = getClientKey(req);
-    const snapshot = getQuotaSnapshot(clientKey);
 
-    if (snapshot.remaining <= 0) {
+    if (!limits.allowRequest(clientKey)) {
       res.status(429).json({
-        error: `Bạn đã dùng hết ${AI_DAILY_USER_LIMIT} lượt phân tích AI miễn phí hôm nay. Bạn vẫn có thể tra cứu thông tin trực tiếp qua bộ tìm kiếm nội bộ không giới hạn và quay lại dùng AI vào ngày mai.`,
-        quota: snapshot,
-      });
-      return;
-    }
-
-    if (snapshot.globalRemaining <= 0) {
-      res.status(429).json({
-        error:
-          'Hệ thống đã chạm ngưỡng lượt AI miễn phí trong ngày để bảo vệ hạn mức. Vui lòng sử dụng công cụ tự dò tìm kiếm nội bộ hoặc thử lại vào ngày mai.',
-        quota: snapshot,
-      });
-      return;
-    }
-
-    if (!process.env.GEMINI_API_KEY) {
-      res.status(503).json({
-        error:
-          'Chưa cấu hình GEMINI_API_KEY trên máy chủ. Vui lòng kiểm tra mục Settings > Secrets.',
-        quota: snapshot,
+        error: 'Quý ngài gửi yêu cầu quá nhanh. Vui lòng đợi khoảng một phút rồi hỏi tiếp.',
+        quota: limits.peek(clientKey),
       });
       return;
     }
@@ -279,7 +315,7 @@ async function startServer() {
     }
 
     const sanitizedMessages: ChatMessageInput[] = rawMessages
-      .slice(-10)
+      .slice(-AI_HISTORY_MESSAGES)
       .filter(
         (m): m is ChatMessageInput =>
           Boolean(m) &&
@@ -292,61 +328,150 @@ async function startServer() {
         text: m.text.trim().slice(0, 2000),
       }));
 
-    if (sanitizedMessages.length === 0) {
+    // Ensure Gemini history begins with a user turn
+    while (sanitizedMessages.length > 0 && sanitizedMessages[0].role !== 'user') {
+      sanitizedMessages.shift();
+    }
+
+    const lastUserMessage = sanitizedMessages[sanitizedMessages.length - 1];
+    if (!lastUserMessage || lastUserMessage.role !== 'user') {
       res.status(400).json({ error: 'Nội dung tin nhắn không được để trống.' });
       return;
     }
 
-    const lastUserMessage =
-      [...sanitizedMessages].reverse().find((m) => m.role === 'user')?.text || '';
-    const cacheKey = lastUserMessage.toLowerCase().replace(/\s+/g, ' ').trim();
-    const cachedReply = dailyResponseCache.get(cacheKey);
-    if (cachedReply) {
-      res.json({ reply: cachedReply, quota: snapshot, cached: true });
+    const forceAi = req.body?.forceAi === true;
+    const route = routeQuestion(searchIndex, lastUserMessage.text);
+
+    // 1) Zero-token server-side defense for greetings & local lookups (unless user explicitly requested deep AI analysis)
+    if (!forceAi && route.kind !== 'ai') {
+      res.json({
+        reply: route.reply,
+        source: 'local',
+        quota: limits.peek(clientKey),
+      });
       return;
     }
 
-    const contents = sanitizedMessages.slice(-4).map((m) => ({
+    const hits = route.kind === 'ai' ? route.hits : search(searchIndex, lastUserMessage.text, 5);
+    const fallbackText = renderHits(hits);
+
+    // 2) Reuse 24h TTL cache for identical single-turn prompts
+    const cacheKey = normalize(lastUserMessage.text);
+    const cachedReply = cacheKey ? aiCache.get(cacheKey) : undefined;
+    if (cachedReply) {
+      res.json({
+        reply: cachedReply,
+        source: 'cache',
+        cached: true,
+        quota: limits.peek(clientKey),
+      });
+      return;
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      if (fallbackText) {
+        res.json({
+          reply: `Mục gần nhất tôi tìm được trong dữ liệu lớp (chưa bật GEMINI_API_KEY):\n\n${fallbackText}`,
+          source: 'local-fallback',
+          quota: limits.peek(clientKey),
+        });
+        return;
+      }
+      res.status(503).json({
+        error:
+          'Chưa cấu hình GEMINI_API_KEY trên máy chủ. Vui lòng kiểm tra mục Settings > Secrets.',
+        quota: limits.peek(clientKey),
+      });
+      return;
+    }
+
+    // 3) Check & reserve daily quota before calling Gemini (refunded on API error)
+    const usage = limits.tryConsumeAi(clientKey);
+    if (!usage.ok) {
+      const notice =
+        usage.reason === 'global'
+          ? 'Hệ thống đã chạm ngưỡng lượt AI miễn phí trong ngày để bảo vệ hạn mức (làm mới lúc 00:00 giờ Việt Nam).'
+          : `Bạn đã dùng hết ${AI_DAILY_USER_LIMIT} lượt phân tích AI miễn phí hôm nay (làm mới lúc 00:00 giờ Việt Nam).`;
+      if (fallbackText) {
+        res.json({
+          reply: `${notice}\n\nDưới đây là mục gần nhất hệ thống tự dò được:\n\n${fallbackText}`,
+          source: 'quota',
+          quota: {
+            dateKey: usage.dateKey,
+            used: usage.used,
+            limit: usage.limit,
+            remaining: usage.remaining,
+            globalRemaining: usage.globalRemaining,
+            globalLimit: usage.globalLimit,
+          },
+        });
+        return;
+      }
+      res.status(429).json({
+        error: `${notice} Bạn vẫn có thể tra cứu thông tin trực tiếp qua bộ tìm kiếm nội bộ không giới hạn.`,
+        quota: {
+          dateKey: usage.dateKey,
+          used: usage.used,
+          limit: usage.limit,
+          remaining: usage.remaining,
+          globalRemaining: usage.globalRemaining,
+          globalLimit: usage.globalLimit,
+        },
+      });
+      return;
+    }
+
+    const contents = sanitizedMessages.map((m) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.text }],
     }));
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: GEMINI_MODEL,
         contents,
         config: {
-          systemInstruction: buildSystemInstruction(lastUserMessage),
+          systemInstruction: buildSystemInstruction(lastUserMessage.text, hits),
+          maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
         },
       });
 
       const reply = response.text?.trim();
       if (!reply) {
+        limits.refundAi(clientKey);
         res.status(502).json({
           error: 'Mô hình AI không trả về nội dung. Vui lòng thử lại.',
+          quota: limits.peek(clientKey),
         });
         return;
       }
 
-      if (cacheKey && dailyResponseCache.size < 200) {
-        dailyResponseCache.set(cacheKey, reply);
-      }
-
-      globalDailyAiCount += 1;
-      userDailyAiCounts.set(clientKey, (userDailyAiCounts.get(clientKey) || 0) + 1);
-      const updatedQuota = getQuotaSnapshot(clientKey);
-
-      res.json({ reply, quota: updatedQuota });
+      if (cacheKey) aiCache.set(cacheKey, reply);
+      res.json({
+        reply,
+        source: 'ai',
+        quota: limits.peek(clientKey),
+      });
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Lỗi kết nối dịch vụ AI.';
-      const status =
-        message.includes('PERMISSION_DENIED') || message.includes('API_KEY_INVALID')
-          ? 403
-          : message.includes('RESOURCE_EXHAUSTED')
-            ? 429
-            : 500;
-      res.status(status).json({ error: message, quota: getQuotaSnapshot(clientKey) });
+      limits.refundAi(clientKey);
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[api/chat] Gemini error:', message);
+      if (message.includes('PERMISSION_DENIED') || message.includes('API_KEY_INVALID')) {
+        res.status(403).json({
+          error: 'Dịch vụ AI từ chối yêu cầu. Chủ trang vui lòng kiểm tra khóa API.',
+          quota: limits.peek(clientKey),
+        });
+      } else if (message.includes('RESOURCE_EXHAUSTED')) {
+        res.status(429).json({
+          error: 'Dịch vụ AI đang quá tải hoặc đã hết hạn mức. Vui lòng thử lại sau.',
+          quota: limits.peek(clientKey),
+        });
+      } else {
+        res.status(500).json({
+          error: 'Lỗi kết nối dịch vụ AI. Vui lòng thử lại.',
+          quota: limits.peek(clientKey),
+        });
+      }
     }
   });
 
@@ -366,7 +491,14 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`The D25B Times server running on http://0.0.0.0:${PORT}`);
+    console.log(
+      `[chat] ${searchIndex.docs.length} mục tra cứu cục bộ · AI: ${AI_DAILY_LIMIT_PER_IP_LABEL()}`
+    );
   });
+}
+
+function AI_DAILY_LIMIT_PER_IP_LABEL() {
+  return `${AI_DAILY_USER_LIMIT}/user/ngày, ${AI_DAILY_GLOBAL_LIMIT}/ngày toàn hệ thống · ${AI_MAX_OUTPUT_TOKENS} max output tokens`;
 }
 
 startServer();

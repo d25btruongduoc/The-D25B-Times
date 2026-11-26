@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Archive,
-  BellRing,
   Calendar,
   CheckCircle2,
   ChevronDown,
@@ -16,7 +14,6 @@ import {
 import {
   DEADLINES,
   DeadlineTask,
-  getActiveAppUpdates,
   getActiveDeadlines,
   getCalendarDaysRemaining,
   HandbookTab,
@@ -27,6 +24,8 @@ import {
   SCHEDULE_CLASS_META,
   ScheduleClassCode,
 } from '../data/d25bData';
+import { useAppUpdates } from '../services/githubUpdatesService';
+import { HoverPreviewCard } from './HoverMiniPreview';
 
 interface DeadlineViewProps {
   completedIds: string[];
@@ -197,8 +196,7 @@ export function DeadlineView({
 
   // Auto-prune expired deadlines & 7-day expired app updates in real time
   const activeDeadlines = useMemo(() => getActiveDeadlines(now), [now]);
-  const archivedCount = DEADLINES.length - activeDeadlines.length;
-  const activeUpdates = useMemo(() => getActiveAppUpdates(now), [now]);
+  const activeUpdates = useAppUpdates(now);
 
   // Next upcoming deadline for the top countdown
   const nextDeadline = useMemo(() => {
@@ -366,9 +364,6 @@ export function DeadlineView({
           <h1 className="mt-1.5 font-heading text-3xl sm:text-4xl font-bold text-slate-50">
             Lịch Deadline &amp; Cập nhật Hệ thống
           </h1>
-          <p className="mt-2 text-sm text-slate-400 max-w-2xl">
-            Bấm vào mục <strong className="text-slate-200">Bộ đếm lịch theo ngày</strong> để mở lịch tháng và thời khóa biểu HK2 NH 2026–2027 phân rõ 4 lớp. Các tin quá hạn tự động ẩn khỏi bảng và lưu tại Học tập &amp; Cẩm nang.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -411,9 +406,6 @@ export function DeadlineView({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] uppercase tracking-widest text-cyan-400 font-semibold">
                   Bộ đếm lịch theo ngày
-                </span>
-                <span className="text-[11px] font-mono text-slate-400">
-                  · TKB HK2 2026–2027 (D25A, D25B, D25C, D25D)
                 </span>
               </div>
               <p className="text-sm sm:text-base font-bold text-slate-100 mt-0.5 truncate">
@@ -879,18 +871,29 @@ export function DeadlineView({
       </section>
 
       {/* Active Deadlines Section (Prioritized before App Updates) */}
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <section className="relative overflow-hidden rounded-2xl border-2 border-cyan-400/55 bg-gradient-to-b from-[#12203A] via-[#0E1629] to-[#0A101E] p-5 sm:p-7 shadow-[0_0_50px_-14px_rgba(34,211,238,0.32)] space-y-5">
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-sky-400 to-amber-300"
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-1">
           <div>
-            <h2 className="font-heading text-2xl font-bold text-slate-50">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-mono uppercase tracking-wider font-semibold text-cyan-300 bg-cyan-400/15 border border-cyan-400/40 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-300" />
+                Ưu tiên theo dõi
+              </span>
+              <span className="text-xs font-mono text-amber-300 font-medium">
+                {filteredDeadlines.length} mốc đang hiển thị
+              </span>
+            </div>
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-white">
               Nhiệm vụ &amp; Mốc thời gian còn hiệu lực
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Bấm trực tiếp vào từng mục để mở toàn bộ nội dung, quy định và đường dẫn đầy đủ từ site nguồn.
-            </p>
           </div>
 
-          <div className="flex items-center gap-1.5 p-1 bg-[#0E1525] border border-slate-800 rounded-lg overflow-x-auto w-fit max-w-full">
+          <div className="flex items-center gap-1.5 p-1 bg-[#080D1A] border border-cyan-500/30 rounded-lg overflow-x-auto w-fit max-w-full shrink-0">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
@@ -898,8 +901,8 @@ export function DeadlineView({
                 onClick={() => setCategory(cat)}
                 className={`px-3.5 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   category === cat
-                    ? 'bg-cyan-400 text-slate-950 font-semibold'
-                    : 'text-slate-400 hover:text-slate-100'
+                    ? 'bg-cyan-400 text-slate-950 font-semibold shadow-sm'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {cat}
@@ -908,17 +911,24 @@ export function DeadlineView({
           </div>
         </div>
 
-        <div className="bg-[#0E1525] border border-slate-800 rounded-xl divide-y divide-slate-800 overflow-hidden">
+        <div className="bg-[#090F1E]/95 border border-cyan-500/30 rounded-xl divide-y divide-slate-800/90 overflow-hidden shadow-inner">
           {filteredDeadlines.length > 0 ? (
             filteredDeadlines.map((task) => {
               const isDone = completedIds.includes(task.id);
               const isOpen = expandedDeadlineIds.includes(task.id);
               const daysLeft = getCalendarDaysRemaining(task.expiresAt, now);
+              const isUrgent = !isDone && daysLeft <= 3;
 
               return (
                 <div
                   key={task.id}
-                  className={`transition-colors ${isDone ? 'bg-[#0B1120]/70' : ''}`}
+                  className={`border-l-4 transition-colors ${
+                    isDone
+                      ? 'border-l-emerald-500/40 bg-[#070B14]/75 opacity-80'
+                      : isUrgent
+                        ? 'border-l-amber-400 bg-amber-400/[0.04] hover:bg-[#131F38]/80'
+                        : 'border-l-cyan-400 hover:bg-[#131F38]/75'
+                  }`}
                 >
                   <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex items-start gap-4 min-w-0 flex-1">
@@ -933,9 +943,9 @@ export function DeadlineView({
                         className="mt-1 text-cyan-400 hover:scale-105 transition-transform shrink-0 cursor-pointer"
                       >
                         {isDone ? (
-                          <CheckCircle2 className="w-5 h-5 text-cyan-400" />
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                         ) : (
-                          <Circle className="w-5 h-5 text-slate-500" />
+                          <Circle className="w-5 h-5 text-cyan-400/75" />
                         )}
                       </button>
 
@@ -945,15 +955,21 @@ export function DeadlineView({
                         className="min-w-0 flex-1 text-left cursor-pointer group"
                       >
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                          <span className="font-medium text-cyan-400">
+                          <span className="font-semibold text-cyan-300">
                             {task.category}
                           </span>
                           <span aria-hidden="true">·</span>
-                          <span className="font-mono tabular-nums text-amber-300 font-medium">
+                          <span className="font-mono tabular-nums text-amber-300 font-semibold">
                             {task.dueLabel}
                           </span>
                           <span aria-hidden="true">·</span>
-                          <span className="font-mono text-emerald-300">
+                          <span
+                            className={`px-2 py-0.5 rounded border font-mono font-semibold ${
+                              isUrgent
+                                ? 'bg-amber-400/15 text-amber-200 border-amber-400/40'
+                                : 'bg-emerald-400/10 text-emerald-300 border-emerald-400/30'
+                            }`}
+                          >
                             {daysLeft <= 0 ? 'Hôm nay' : `Còn ${daysLeft} ngày`}
                           </span>
                           <span aria-hidden="true">·</span>
@@ -962,13 +978,13 @@ export function DeadlineView({
                           </span>
                         </div>
                         <h3
-                          className={`mt-1.5 text-base sm:text-lg font-bold group-hover:text-cyan-300 transition-colors ${
-                            isDone ? 'line-through text-slate-500' : 'text-slate-50'
+                          className={`mt-2 text-base sm:text-lg font-bold group-hover:text-cyan-300 transition-colors ${
+                            isDone ? 'line-through text-slate-500' : 'text-white'
                           }`}
                         >
                           {task.title}
                         </h3>
-                        <p className="mt-1 text-sm text-slate-300 leading-relaxed">
+                        <p className="mt-1 text-sm text-slate-200 leading-relaxed">
                           {task.summary}
                         </p>
                         <p className="mt-1.5 text-xs text-slate-400">
@@ -981,7 +997,7 @@ export function DeadlineView({
                       <button
                         type="button"
                         onClick={() => toggleDeadlineExpand(task.id)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-200 bg-[#0B1120] border border-slate-700 hover:border-cyan-400/50 hover:text-cyan-300 rounded-md whitespace-nowrap cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-100 bg-[#0D162B] border border-slate-600 hover:border-cyan-400/60 hover:text-cyan-300 rounded-md whitespace-nowrap cursor-pointer"
                       >
                         <span>{isOpen ? 'Thu gọn nội dung' : 'Xem nội dung đầy đủ'}</span>
                         {isOpen ? (
@@ -996,7 +1012,7 @@ export function DeadlineView({
                           href={task.externalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-md whitespace-nowrap"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-md whitespace-nowrap shadow-sm"
                         >
                           <span>Mở cổng / Văn bản</span>
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -1007,7 +1023,7 @@ export function DeadlineView({
 
                   {/* Expanded Full Content Panel */}
                   {isOpen && (
-                    <div className="px-5 sm:px-6 pb-6 pt-3 pl-14 bg-[#0B1120]/80 border-t border-slate-800/80 space-y-4">
+                    <div className="px-5 sm:px-6 pb-6 pt-3 pl-14 bg-[#070B14]/85 border-t border-slate-800/80 space-y-4">
                       <div className="space-y-2">
                         <p className="text-xs uppercase tracking-widest text-cyan-400 font-semibold">
                           Nội dung chi tiết từ The D25B Times
@@ -1022,16 +1038,17 @@ export function DeadlineView({
                       {(task.links?.length || task.actionTab) && (
                         <div className="pt-2 flex flex-wrap items-center gap-2.5">
                           {task.links?.map((link) => (
-                            <a
-                              key={link.url}
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-md"
-                            >
-                              <span>{link.label}</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
+                            <HoverPreviewCard key={link.url} url={link.url} label={link.label}>
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-md"
+                              >
+                                <span>{link.label}</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </HoverPreviewCard>
                           ))}
                           {task.actionTab && (
                             <button
@@ -1067,80 +1084,9 @@ export function DeadlineView({
         </div>
       </section>
 
-      {/* Daily Countdown + Auto-Pruning Archive Status + 7-Day Updates */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-5 bg-[#0E1525] border border-slate-800 rounded-xl p-6 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-cyan-400">
-              <BellRing className="w-4 h-4" />
-              <span className="text-xs uppercase tracking-widest font-semibold">
-                Bộ đếm ngày tiếp theo
-              </span>
-            </div>
-            {nextDeadline && (
-              <span className="px-2.5 py-1 text-xs font-mono font-semibold bg-amber-400/15 text-amber-300 border border-amber-400/30 rounded-md">
-                {(() => {
-                  const diff = getCalendarDaysRemaining(nextDeadline.expiresAt, now);
-                  if (diff === 0) return 'Hôm nay';
-                  if (diff === 1) return 'Còn 1 ngày';
-                  return `Còn ${diff} ngày`;
-                })()}
-              </span>
-            )}
-          </div>
-
-          {nextDeadline ? (
-            <div className="space-y-2">
-              <h2 className="font-heading text-xl font-bold text-slate-50">
-                {nextDeadline.title}
-              </h2>
-              <p className="text-xs font-mono text-amber-300">
-                Mốc thời gian: {nextDeadline.dueLabel} · {nextDeadline.audience}
-              </p>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                {nextDeadline.summary}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <h2 className="font-heading text-xl font-bold text-slate-50">
-                Hiện chưa có deadline nào sắp hết hạn
-              </h2>
-              <p className="text-sm text-slate-400">
-                Tất cả các hạn chót trước ngày hôm nay đã được tự động dọn khỏi bảng để tránh nhiễu thông tin.
-              </p>
-            </div>
-          )}
-
-          {/* Archive Redistribution Callout */}
-          <div className="pt-4 border-t border-slate-800 space-y-3">
-            <div className="flex items-start gap-2.5 text-xs text-slate-400">
-              <Archive className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-              <span>
-                Đã tự động ẩn <strong className="text-slate-200">{archivedCount}</strong> mốc quá hạn và phân bổ đầy đủ vào Học tập &amp; Cẩm nang để tra cứu lâu dài.
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onNavigate('handbook', { handbookTab: 'admin' })}
-                className="px-3 py-1.5 text-xs font-medium text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-md whitespace-nowrap cursor-pointer"
-              >
-                Mở Cẩm nang
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate('study')}
-                className="px-3 py-1.5 text-xs font-medium text-slate-200 bg-[#131C31] border border-slate-700 hover:border-cyan-400/40 rounded-md whitespace-nowrap cursor-pointer"
-              >
-                Kho Học tập
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 7-Day App Updates Feed */}
-        <div className="lg:col-span-7">
+      {/* 7-Day App Updates Feed */}
+      <section>
+        <div>
           {activeUpdates.length > 0 ? (
             <div className="bg-[#0E1525] border border-cyan-500/30 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-800 bg-[#0B1120] flex flex-wrap items-center justify-between gap-2">
@@ -1205,24 +1151,37 @@ export function DeadlineView({
                             ))}
                           </ul>
 
-                          {upd.target && (
+                          {(upd.target || upd.externalUrl) && (
                             <div className="pt-1 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (upd.target!.section === 'deadline') {
-                                    setIsCalendarExpanded(true);
-                                    return;
-                                  }
-                                  onNavigate(upd.target!.section, {
-                                    handbookTab: upd.target!.handbookTab,
-                                    courseId: upd.target!.courseId,
-                                  });
-                                }}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-md cursor-pointer"
-                              >
-                                <span>{upd.target.label}</span>
-                              </button>
+                              {upd.target && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (upd.target!.section === 'deadline') {
+                                      setIsCalendarExpanded(true);
+                                      return;
+                                    }
+                                    onNavigate(upd.target!.section, {
+                                      handbookTab: upd.target!.handbookTab,
+                                      courseId: upd.target!.courseId,
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-md cursor-pointer"
+                                >
+                                  <span>{upd.target.label}</span>
+                                </button>
+                              )}
+                              {upd.externalUrl && (
+                                <a
+                                  href={upd.externalUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-md"
+                                >
+                                  <span>Xem thay đổi trên GitHub</span>
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              )}
                             </div>
                           )}
                         </div>

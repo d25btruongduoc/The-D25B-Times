@@ -18,6 +18,7 @@ import {
   ORIENTATION_DOCS,
   SCHOOL_NOTICES,
 } from '../data/d25bData';
+import { HoverPreviewCard } from './HoverMiniPreview';
 
 interface HandbookViewProps {
   initialTab?: HandbookTab;
@@ -587,16 +588,17 @@ export function HandbookView({ initialTab }: HandbookViewProps) {
                         {notice.links && notice.links.length > 0 && (
                           <div className="pt-1 flex flex-wrap gap-2.5">
                             {notice.links.map((link) => (
-                              <a
-                                key={link.url}
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-md"
-                              >
-                                <span>{link.label}</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
+                              <HoverPreviewCard key={link.url} url={link.url} label={link.label}>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-md"
+                                >
+                                  <span>{link.label}</span>
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              </HoverPreviewCard>
                             ))}
                           </div>
                         )}
@@ -621,23 +623,24 @@ export function HandbookView({ initialTab }: HandbookViewProps) {
 
               <div className="divide-y divide-slate-800">
                 {ORIENTATION_DOCS.map((doc, idx) => (
-                  <a
-                    key={`${doc.code}-${idx}`}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="py-3.5 flex items-center justify-between gap-4 group"
-                  >
-                    <div className="flex items-baseline gap-4 min-w-0">
-                      <span className="font-mono tabular-nums text-xs font-semibold text-cyan-400 w-14 shrink-0">
-                        {doc.code === 'MẪU' ? 'MẪU ĐƠN' : `Số ${doc.code}`}
-                      </span>
-                      <p className="text-sm text-slate-200 group-hover:text-cyan-300 transition-colors">
-                        {doc.title}
-                      </p>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 shrink-0" />
-                  </a>
+                  <HoverPreviewCard key={`${doc.code}-${idx}`} url={doc.url} label={doc.title}>
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-3.5 flex items-center justify-between gap-4 group"
+                    >
+                      <div className="flex items-baseline gap-4 min-w-0">
+                        <span className="font-mono tabular-nums text-xs font-semibold text-cyan-400 w-14 shrink-0">
+                          {doc.code === 'MẪU' ? 'MẪU ĐƠN' : `Số ${doc.code}`}
+                        </span>
+                        <p className="text-sm text-slate-200 group-hover:text-cyan-300 transition-colors">
+                          {doc.title}
+                        </p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 shrink-0" />
+                    </a>
+                  </HoverPreviewCard>
                 ))}
               </div>
 

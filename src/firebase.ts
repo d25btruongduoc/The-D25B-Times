@@ -57,11 +57,16 @@ export function clearCachedDriveAccessToken(): void {
   cachedDriveAccessToken = null;
 }
 
+function cleanEnvValue(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.trim().replace(/^["']|["']$/g, '').trim();
+}
+
 async function loadFirebaseRuntimeConfig(): Promise<FirebaseRuntimeConfig> {
-  const envKey = import.meta.env.VITE_FIREBASE_API_KEY as string | undefined;
-  const envProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined;
-  const envAppId = import.meta.env.VITE_FIREBASE_APP_ID as string | undefined;
-  const envAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined;
+  const envKey = cleanEnvValue(import.meta.env.VITE_FIREBASE_API_KEY);
+  const envProjectId = cleanEnvValue(import.meta.env.VITE_FIREBASE_PROJECT_ID);
+  const envAppId = cleanEnvValue(import.meta.env.VITE_FIREBASE_APP_ID);
+  const envAuthDomain = cleanEnvValue(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
 
   if (envKey && envProjectId && envAppId && envAuthDomain) {
     return {
@@ -69,12 +74,9 @@ async function loadFirebaseRuntimeConfig(): Promise<FirebaseRuntimeConfig> {
       projectId: envProjectId,
       appId: envAppId,
       authDomain: envAuthDomain,
-      firestoreDatabaseId:
-        (import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID as string | undefined) || '',
-      storageBucket:
-        (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined) || '',
-      messagingSenderId:
-        (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined) || '',
+      firestoreDatabaseId: cleanEnvValue(import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID),
+      storageBucket: cleanEnvValue(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+      messagingSenderId: cleanEnvValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
     };
   }
 
@@ -360,6 +362,10 @@ export function formatFirebaseAuthError(error: unknown): string {
       return 'Email này đã liên kết với phương thức đăng nhập khác.';
     case 'auth/operation-not-allowed':
       return 'Phương thức đăng nhập này chưa được bật trong Firebase Console của dự án. Quản trị viên cần bật nhà cung cấp này trong Authentication > Sign-in method.';
+    case 'auth/invalid-api-key':
+      return 'Firebase API Key không hợp lệ hoặc đã bị thu hồi. Cần kiểm tra lại giá trị VITE_FIREBASE_API_KEY trong cài đặt triển khai hoặc tạo lại Web API Key trong Firebase / Google Cloud Console.';
+    case 'auth/unauthorized-domain':
+      return 'Tên miền hiện tại chưa được cấp phép đăng nhập. Cần thêm tên miền vào Firebase Console > Authentication > Settings > Authorized domains.';
     case 'auth/too-many-requests':
       return 'Bạn đã thử quá nhiều lần. Vui lòng đợi ít phút rồi thử lại.';
     default:

@@ -40,7 +40,7 @@ export interface CourseItem {
   shortCode: string;
   year: 'year1' | 'year2' | 'year3to5';
   semester: string;
-  semesterKey: 'y1-hk1' | 'y1-hk2' | 'y2-hk1' | 'y3-5';
+  semesterKey: 'y1-hk1' | 'y1-hk2' | 'y2-hk1' | 'y2-hk2' | 'y3-5';
   category: 'Chuyên ngành Dược' | 'Khoa học cơ bản' | 'Thực tập' | 'Đại cương & GDQPAN';
   summary: string;
   highlights: string[];
@@ -77,6 +77,7 @@ export interface AppUpdateItem {
   details: string[];
   target?: { section: NavSection; courseId?: string; handbookTab?: HandbookTab; label: string };
   links?: ResourceLink[];
+  externalUrl?: string;
 }
 
 export interface SchoolNoticeItem {
@@ -1183,6 +1184,29 @@ export const COURSES: CourseItem[] = [
       },
     ],
   },
+
+  // NĂM 2 - HK2
+  {
+    id: 'hpt2',
+    name: 'Hóa Phân Tích 2 (THHPT2)',
+    shortCode: 'HPT2',
+    year: 'year2',
+    semester: 'Năm 2 · Học kỳ 2',
+    semesterKey: 'y2-hk2',
+    category: 'Chuyên ngành Dược',
+    summary:
+      'Kho học liệu và tài liệu học tập học phần Hóa Phân Tích 2 (THHPT2) dành cho sinh viên Năm 2 – Học kỳ 2 trên Google Drive.',
+    highlights: [
+      'Thư mục tài liệu Google Drive học phần Hóa Phân Tích 2 (THHPT2)',
+    ],
+    links: [
+      {
+        label: 'Kho tài liệu Hóa Phân Tích 2 (THHPT2) – Google Drive',
+        url: 'https://drive.google.com/drive/folders/16WKPP8PfyI4s-q9EwXa669ftd7cN_oio?usp=sharing',
+        kind: 'drive',
+      },
+    ],
+  },
 ];
 
 export const DEADLINES: DeadlineTask[] = [
@@ -1336,68 +1360,51 @@ export const DEADLINES: DeadlineTask[] = [
   },
 ];
 
-// Thông báo cập nhật tính năng & nội dung mới trên app — tự động hiển thị trong 7 ngày kể từ updatedAt
+// Thông báo các thay đổi chính sau khi cập nhật app lên GitHub — hiển thị tự động trong 7 ngày
 export const APP_UPDATES: AppUpdateItem[] = [
   {
-    id: 'upd-hk2-schedule-20261125',
-    title: 'Tích hợp TKB Học kỳ II NH 2026–2027 (D25A, D25B, D25C, D25D) & Thu gọn Bộ đếm lịch',
+    id: 'upd-release-thhpt1-qr-hover-20261126',
+    title: 'QR Code nộp báo cáo THHPT1 & Xem trước nhanh khi rê chuột 2 giây',
     category: 'Tính năng mới',
-    updatedAt: '2026-11-25T19:20:00+07:00',
+    updatedAt: '2026-11-26T10:30:00+07:00',
     ttlDays: 7,
     summary:
-      'Bổ sung trọn bộ lịch học, lịch thực tập TT KST / TT HPT2, lịch bù Tết DL và lịch thi HK2 năm học 2026–2027 cho 4 lớp D25A, D25B, D25C, D25D vào Bộ đếm lịch.',
+      'Bổ sung thẻ QR Code quét nhanh cho toàn bộ 12 link nộp báo cáo Thực hành Hóa Phân Tích 1 và tự động mở khung xem trước nhỏ khi đưa chuột vào mục tài liệu trong 2 giây.',
     details: [
-      'Phân tách rõ lịch học của 4 lớp: D25A, D25B, D25C và D25D theo đúng từng ngày và ca học (Sáng / Chiều).',
-      'Đánh dấu đầy đủ ngày nghỉ lễ (Ngày Văn hóa VN 24/11/2026, Tết Dương lịch 01/01/2027, Nghỉ Tết Nguyên Đán 25/01–14/02/2027), các buổi bù Tết DL (05/01, 07/01, 09/01) và các ngày thi kết thúc học phần.',
-      'Rút gọn Bộ đếm lịch theo ngày thành thanh tóm tắt gọn nhẹ mặc định; bấm trực tiếp vào mục Bộ đếm lịch để mở toàn bộ lịch tháng và tra cứu từng ngày theo 4 lớp.',
+      'Mục Nộp báo cáo THHPT1 hiển thị trực quan thẻ QR Code kèm nút mở link theo từng giảng viên phụ trách (bấm vào mã QR để phóng to khi quét bằng điện thoại).',
+      'Khi đưa chuột vào các mục tài liệu Drive, Docs, Sheets hoặc Video trong 2 giây sẽ tự động hiện bản xem trước nhỏ ngay cạnh thẻ.',
+      'Tinh gọn giao diện danh sách Kho học phần và khung Quản trang AI để tra cứu nhanh và thoáng hơn.',
     ],
-    target: { section: 'deadline', label: 'Mở Lịch & Bộ đếm ngày' },
+    target: { section: 'study', courseId: 'hpt1', label: 'Mở Hóa Phân Tích (THHPT1)' },
   },
   {
-    id: 'upd-calendar-sync-20261125',
-    title: 'Ra mắt Bộ đếm lịch theo ngày thời gian thực & Tự động lọc tin quá hạn',
-    category: 'Tính năng mới',
-    updatedAt: '2026-11-25T18:00:00+07:00',
-    ttlDays: 7,
-    summary:
-      'Đồng bộ đồng hồ & lịch tháng theo ngày thực tế, tự động ẩn các deadline đã hết hạn khỏi bảng chính và chuyển toàn bộ nội dung lưu trữ sang Học tập và Cẩm nang.',
-    details: [
-      'Đồng bộ thời gian thực theo từng ngày: hiển thị lịch tháng tương tác, đánh dấu ngày hôm nay và đếm ngược số ngày còn lại đến các mốc tiếp theo.',
-      'Các deadline đã qua hạn (BHYT đợt 9 tháng, ĐKHP HK2 các khóa 11/11, Ngoại trú 10/10, SV 5 Tốt 28/09, GDQPAN 05/2026, PSU–AUN Summer Camp) được tự động dọn khỏi danh sách đang mở và phân bổ đầy đủ vào Cẩm nang & Học tập.',
-      'Đã gỡ bỏ khung thời gian ĐKHP HK2 và bảng dữ liệu bên dưới theo yêu cầu; toàn bộ quy định ĐKHP HK2 (D22–D25 & K26) và file TKB dự kiến được tích hợp dạng thẻ bấm xem chi tiết.',
-      'Mọi cập nhật mới trên The D25B Times sẽ tự động hiển thị tại mục này trong vòng 7 ngày kể từ ngày sửa đổi.',
-    ],
-    target: { section: 'handbook', handbookTab: 'admin', label: 'Xem kho lưu trữ tại Cẩm nang' },
-  },
-  {
-    id: 'upd-site-notices-20261125',
-    title: 'Bổ sung trọn bộ Thông báo Trường – Lớp, Học phí, Gửi xe 2026 & ĐRL từ Google Site',
-    category: 'Cẩm nang & Thông báo',
-    updatedAt: '2026-11-25T18:00:00+07:00',
-    ttlDays: 7,
-    summary:
-      'Cập nhật chính xác quy định gửi xe miễn phí 100% từ 01/01/2026, tiện ích Văn phòng Đoàn – Hội, quy định nghỉ học/vắng mặt, Điểm rèn luyện và hơn 15 văn bản SharePoint đầu khóa.',
-    details: [
-      'Mục Tân sinh viên & UMPSP: cập nhật giờ mở cửa nhà xe (T2–T7: 06:00–21:00; CN: 06:00–17:00), vé khách/chuyên đề 4.000đ/lượt, thủ tục khi mất thẻ xe (CCCD + Giấy tờ xe + Thẻ SV) và các tiện ích tại VP Đoàn – Hội (mượn blouse, mũ bảo hiểm, in ấn 250đ/tờ).',
-      'Mục Điểm rèn luyện & SV 5 Tốt: tích hợp đầy đủ hướng dẫn chấm ĐRL 2026, quy định Minigame không copy-paste, cú pháp đặt tên file PDF minh chứng HK1 (sai trừ 2 điểm) và link danh sách hoạt động cấp Trường.',
-      'Mục Tổ chức lớp & Văn bản: bổ sung PSU–AUN Summer Camp 2026, Đối thoại Lãnh đạo Trường Dược, Khảo sát IBM SPSS V31, Lớp Cảm tình Đoàn, Chiến dịch Xuân Tình Nguyện, Gia hạn học phí NH 25–26, link E-portfolio theo CVHT Cô Dung / Thầy Minh và đầy đủ link SharePoint các quy chế 838, 1691, 1497, 5158, 1706, 2971, 792, 5333, 3767.',
-    ],
-    target: { section: 'handbook', handbookTab: 'campus', label: 'Mở Cẩm nang UMPSP' },
-  },
-  {
-    id: 'upd-study-preview-20261125',
-    title: 'Đồng bộ đủ 19 học phần từ Site & Khung xem trước tài liệu trực tiếp trong Học tập',
+    id: 'upd-release-y2hk2-deadline-20261126',
+    title: 'Thêm mục Năm 2 · HK2 (Hóa Phân Tích 2) & Làm nổi bật Deadline ưu tiên',
     category: 'Cập nhật học tập',
-    updatedAt: '2026-11-25T18:00:00+07:00',
+    updatedAt: '2026-11-26T09:00:00+07:00',
     ttlDays: 7,
     summary:
-      'Hợp nhất đầy đủ nội dung các bài đăng từ site vào từng học phần (TACN1, 13 môn HK2, 5 môn Năm 2 HK1) kèm khung xem trước Drive/Docs/Sheets/YouTube và ngăn kéo danh sách bên trái.',
+      'Mở thêm tab học kỳ Năm 2 – HK2 với môn Hóa Phân Tích 2 (THHPT2), làm nổi bật khu vực nhiệm vụ còn hiệu lực và tối ưu tìm kiếm nội bộ.',
     details: [
-      'Danh sách học kỳ hiển thị trọn vẹn không thu gọn khi mở kho học phần; thanh trượt danh sách môn nằm gọn ở cạnh trái màn hình để ưu tiên tối đa không gian đọc nội dung.',
-      'Bổ sung đầy đủ thông báo 4291/ĐHYD-ĐT & QĐ 4887/QĐ-BQP vào môn GDQPAN cùng toàn bộ tips sinh hoạt tại Trung tâm GDQPAN ĐHQG-HCM.',
-      'Bấm vào từng tài liệu trong mục "Truy cập nhanh tài liệu & thư mục" để xem trước trực tiếp ngay bên dưới mà không cần mở nhiều tab rời.',
+      'Bổ sung mục Năm 2 · HK2 trong Kho học phần kèm thư mục Drive tài liệu môn Hóa Phân Tích 2 (THHPT2).',
+      'Khu vực Nhiệm vụ & Mốc thời gian còn hiệu lực tại trang Deadline được làm nổi bật để dễ theo dõi các hạn sắp tới.',
+      'Nâng cấp khả năng tìm kiếm nội bộ không tốn lượt và tối ưu Quản trang AI.',
     ],
-    target: { section: 'study', label: 'Mở Kho Học tập' },
+    target: { section: 'study', label: 'Mở Kho học phần' },
+  },
+  {
+    id: 'upd-release-github-sync-20261126',
+    title: 'Đồng bộ thông báo cập nhật từ GitHub & Triển khai GitHub Pages',
+    category: 'Cẩm nang & Thông báo',
+    updatedAt: '2026-11-26T08:00:00+07:00',
+    ttlDays: 7,
+    summary:
+      'Mục Thông báo cập nhật tự động ghi nhận các thay đổi chính sau mỗi lần cập nhật ứng dụng lên GitHub.',
+    details: [
+      'Tự động đồng bộ các bản cập nhật mới đẩy lên nhánh main trên GitHub (hiển thị trong vòng 7 ngày kể từ lúc cập nhật).',
+      'Ổn định quy trình triển khai tĩnh lên GitHub Pages cùng tính năng đăng nhập Thành viên (Google & Email/Mật khẩu).',
+    ],
+    target: { section: 'deadline', label: 'Xem lịch & cập nhật' },
   },
 ];
 

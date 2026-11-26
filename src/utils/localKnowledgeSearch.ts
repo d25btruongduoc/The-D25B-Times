@@ -5,6 +5,7 @@ import {
   DRL_GUIDES,
   DRL_LINKS,
   EXAM_FORMS,
+  EXTERNAL_STUDY_TOOLS,
   HandbookTab,
   HK2_SCHEDULE_EVENTS,
   LIBRARY_RESOURCES,
@@ -15,6 +16,14 @@ import {
   SEARCH_INDEX,
   SearchIndexItem,
 } from '../data/d25bData';
+import {
+  buildIndex,
+  isGreetingOrThanks,
+  isReasoningNormalized,
+  normalize,
+  renderHits,
+  search as idfSearch,
+} from '../../server/localSearch';
 
 export interface LocalSearchResolution {
   handledLocally: boolean;
@@ -23,38 +32,40 @@ export interface LocalSearchResolution {
 }
 
 const REASONING_TRIGGERS = [
-  'so sánh',
-  'phân tích',
-  'giải thích',
-  'tại sao',
-  'vì sao',
-  'lập kế hoạch',
-  'lộ trình',
-  'tổng hợp',
-  'tóm tắt',
-  'tư vấn',
-  'gợi ý cách',
-  'phân biệt',
-  'đánh giá',
-  'nên chọn',
-  'kinh nghiệm',
-  'chiến lược',
-  'viết giúp',
-  'tính toán',
+  'so sanh',
+  'phan tich',
+  'giai thich',
+  'tai sao',
+  'vi sao',
+  'lap ke hoach',
+  'len ke hoach',
+  'lo trinh',
+  'tong hop',
+  'tom tat',
+  'tu van',
+  'goi y',
+  'phan biet',
+  'danh gia',
+  'nen chon',
+  'nen lam',
+  'kinh nghiem',
+  'chien luoc',
+  'viet giup',
+  'soan giup',
+  'tinh toan',
+  'tinh diem',
 ];
 
 function normalizeText(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .trim();
+  return normalize(input);
 }
 
 export function isReasoningQuery(queryText: string): boolean {
-  const lower = queryText.toLowerCase();
-  return REASONING_TRIGGERS.some((kw) => lower.includes(kw));
+  const padded = ` ${normalizeText(queryText)} `;
+  return (
+    isReasoningNormalized(queryText) ||
+    REASONING_TRIGGERS.some((kw) => padded.includes(` ${kw} `))
+  );
 }
 
 export function findRelatedLinks(queryText: string): SearchIndexItem[] {
@@ -170,10 +181,67 @@ const TOPIC_RULES: {
   },
 ];
 
+let cachedClientIndex: ReturnType<typeof buildIndex> | null = null;
+
+function getClientSearchIndex() {
+  if (!cachedClientIndex) {
+    cachedClientIndex = buildIndex(
+      {
+        contacts: CONTACTS,
+        deadlines: DEADLINES,
+        schoolNotices: SCHOOL_NOTICES,
+        registrationWindows: REGISTRATION_WINDOWS,
+        courses: COURSES.map((c) => ({
+          name: c.name,
+          shortCode: c.shortCode,
+          semester: c.semester,
+          category: c.category,
+          summary: c.summary,
+          highlights: c.highlights,
+          chapters: c.chapters,
+          sections: c.sections,
+          facultyContact: c.facultyContact,
+          links: c.links,
+        })),
+        examForms: EXAM_FORMS,
+        orientationDocs: ORIENTATION_DOCS,
+        drlLinks: DRL_LINKS,
+        drlGuides: DRL_GUIDES,
+        library: LIBRARY_RESOURCES,
+        externalStudyTools: EXTERNAL_STUDY_TOOLS,
+      },
+      {
+        contacts: 'Liên hệ',
+        deadlines: 'Deadline',
+        schoolNotices: 'Thông báo trường',
+        registrationWindows: 'Đăng ký học phần',
+        courses: 'Học phần',
+        examForms: 'Biểu mẫu khảo thí',
+        orientationDocs: 'Tài liệu định hướng',
+        drlLinks: 'Điểm rèn luyện',
+        drlGuides: 'Hướng dẫn ĐRL',
+        library: 'Thư viện',
+        externalStudyTools: 'Công cụ học tập',
+      }
+    );
+  }
+  return cachedClientIndex;
+}
+
 export function tryResolveQueryLocally(queryText: string): LocalSearchResolution {
   const trimmed = queryText.trim();
   if (!trimmed) {
     return { handledLocally: false, answerText: '', relatedItems: [] };
+  }
+
+  // 0. Zero-token greeting / thanks short-circuit
+  const greeting = isGreetingOrThanks(trimmed);
+  if (greeting.matched) {
+    return {
+      handledLocally: true,
+      answerText: greeting.reply,
+      relatedItems: [],
+    };
   }
 
   // If user clearly asks for reasoning / comparison / planning / synthesis, defer to Gemini AI
@@ -340,6 +408,17 @@ export function tryResolveQueryLocally(queryText: string): LocalSearchResolution
     return {
       handledLocally: true,
       answerText: `Đã tìm thấy thông tin phù hợp trong kho dữ liệu nội bộ:\n${lines.join('\n')}`,
+      relatedItems: findRelatedLinks(trimmed),
+    };
+  }
+
+  // 5. IDF-weighted semantic fallback with Vietnamese stopword & noise stripping
+  const idfHits = idfSearch(getClientSearchIndex(), trimmed, 4);
+  const topHit = idfHits[0];
+  if (topHit && topHit.coverage >= 0.6 && topHit.score >= 1.5) {
+    return {
+      handledLocally: true,
+      answerText: renderHits(idfHits),
       relatedItems: findRelatedLinks(trimmed),
     };
   }

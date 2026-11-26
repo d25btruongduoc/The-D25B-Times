@@ -1,13 +1,13 @@
 import { ArrowRight, BookOpen, Calendar, Compass, ExternalLink, FileText } from 'lucide-react';
 import {
   CONTACTS,
-  getActiveAppUpdates,
   getActiveDeadlines,
   getCalendarDaysRemaining,
   HandbookTab,
   IMAGES,
   NavSection,
 } from '../data/d25bData';
+import { useAppUpdates } from '../services/githubUpdatesService';
 import { EditorialImage } from './EditorialImage';
 
 interface HomeViewProps {
@@ -21,7 +21,7 @@ export function HomeView({
 }: HomeViewProps) {
   const now = new Date();
   const activeDeadlines = getActiveDeadlines(now);
-  const activeUpdates = getActiveAppUpdates(now);
+  const activeUpdates = useAppUpdates(now);
   const activeDoneCount = activeDeadlines.filter((d) =>
     completedDeadlines.includes(d.id)
   ).length;
@@ -204,20 +204,32 @@ export function HomeView({
 
               <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between">
                 <span className="text-xs text-slate-400">Tự ẩn sau 7 ngày</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    upd.target
-                      ? onNavigate(upd.target.section, {
-                          handbookTab: upd.target.handbookTab,
-                          courseId: upd.target.courseId,
-                        })
-                      : onNavigate('deadline')
-                  }
-                  className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  Mở cập nhật →
-                </button>
+                {upd.externalUrl ? (
+                  <a
+                    href={upd.externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 whitespace-nowrap shrink-0"
+                  >
+                    <span>Xem trên GitHub</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      upd.target
+                        ? onNavigate(upd.target.section, {
+                            handbookTab: upd.target.handbookTab,
+                            courseId: upd.target.courseId,
+                          })
+                        : onNavigate('deadline')
+                    }
+                    className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    Mở cập nhật →
+                  </button>
+                )}
               </div>
             </article>
           ))}

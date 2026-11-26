@@ -22,6 +22,9 @@ import {
   X,
 } from 'lucide-react';
 import { CONTACTS, COURSES, CourseItem, ResourceLink } from '../data/d25bData';
+import { getPreviewInfo } from '../utils/previewUtils';
+import { HoverPreviewCard } from './HoverMiniPreview';
+import { ReportQrGrid } from './ReportQrGrid';
 
 interface StudyViewProps {
   initialCourseId?: string;
@@ -29,13 +32,14 @@ interface StudyViewProps {
   onToggleBookmarkCourse?: (courseId: string) => void;
 }
 
-type SemesterFilter = 'all' | 'y1-hk1' | 'y1-hk2' | 'y2-hk1' | 'y3-5';
+type SemesterFilter = 'all' | 'y1-hk1' | 'y1-hk2' | 'y2-hk1' | 'y2-hk2' | 'y3-5';
 
 const SEMESTER_TABS: { id: SemesterFilter; label: string }[] = [
   { id: 'all', label: 'Tất cả học phần' },
   { id: 'y1-hk1', label: 'Năm 1 · HK1' },
   { id: 'y1-hk2', label: 'Năm 1 · HK2' },
   { id: 'y2-hk1', label: 'Năm 2 · HK1' },
+  { id: 'y2-hk2', label: 'Năm 2 · HK2' },
   { id: 'y3-5', label: 'Năm 3 – 5' },
 ];
 
@@ -43,6 +47,7 @@ const COMPACT_SEMESTER_MAP: Record<CourseItem['semesterKey'], string> = {
   'y1-hk1': 'N1·K1',
   'y1-hk2': 'N1·K2',
   'y2-hk1': 'N2·K1',
+  'y2-hk2': 'N2·K2',
   'y3-5': 'N3–5',
 };
 
@@ -74,92 +79,6 @@ function getLinkMeta(kind?: ResourceLink['kind']) {
       return { Icon: Globe, tag: 'MS Teams' };
     default:
       return { Icon: Globe, tag: 'Trang liên kết' };
-  }
-}
-
-function getPreviewInfo(
-  rawUrl: string,
-  folderMode: 'list' | 'grid'
-): { embedUrl: string; isFolder: boolean; isVideo: boolean } | null {
-  try {
-    const parsed = new URL(rawUrl);
-    if (parsed.protocol !== 'https:') return null;
-
-    const host = parsed.hostname;
-    const path = parsed.pathname;
-
-    if (host === 'drive.google.com') {
-      const fileMatch = path.match(/^\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if (fileMatch) {
-        return {
-          embedUrl: `https://drive.google.com/file/d/${fileMatch[1]}/preview`,
-          isFolder: false,
-          isVideo: false,
-        };
-      }
-      const folderMatch = path.match(/^\/drive\/(?:u\/\d+\/)?folders\/([a-zA-Z0-9_-]+)/);
-      if (folderMatch) {
-        return {
-          embedUrl: `https://drive.google.com/embeddedfolderview?id=${folderMatch[1]}#${folderMode}`,
-          isFolder: true,
-          isVideo: false,
-        };
-      }
-      if (path === '/open') {
-        const id = parsed.searchParams.get('id');
-        if (id && /^[a-zA-Z0-9_-]+$/.test(id)) {
-          return {
-            embedUrl: `https://drive.google.com/file/d/${id}/preview`,
-            isFolder: false,
-            isVideo: false,
-          };
-        }
-      }
-    }
-
-    if (host === 'docs.google.com') {
-      if (path === '/folderview') {
-        const id = parsed.searchParams.get('id');
-        if (id && /^[a-zA-Z0-9_-]+$/.test(id)) {
-          return {
-            embedUrl: `https://drive.google.com/embeddedfolderview?id=${id}#${folderMode}`,
-            isFolder: true,
-            isVideo: false,
-          };
-        }
-      }
-      const docMatch = path.match(/^\/document\/d\/([a-zA-Z0-9_-]+)/);
-      if (docMatch) {
-        return {
-          embedUrl: `https://docs.google.com/document/d/${docMatch[1]}/preview`,
-          isFolder: false,
-          isVideo: false,
-        };
-      }
-      const sheetMatch = path.match(/^\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-      if (sheetMatch) {
-        return {
-          embedUrl: `https://docs.google.com/spreadsheets/d/${sheetMatch[1]}/htmlembed`,
-          isFolder: false,
-          isVideo: false,
-        };
-      }
-    }
-
-    if (host === 'www.youtube.com' || host === 'youtube.com') {
-      const videoId = parsed.searchParams.get('v');
-      if (path === '/watch' && videoId && /^[a-zA-Z0-9_-]+$/.test(videoId)) {
-        return {
-          embedUrl: `https://www.youtube.com/embed/${videoId}`,
-          isFolder: false,
-          isVideo: true,
-        };
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
   }
 }
 
@@ -439,14 +358,9 @@ export function StudyView({
       {/* Slim Compact Top Header & Semester Controls */}
       <div className="pb-4 border-b border-slate-800 flex flex-col gap-3.5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-slate-50">
-              Kho học phần &amp; Thực tập D25B
-            </h1>
-            <span className="text-xs font-mono uppercase tracking-wider text-cyan-400">
-              5 năm Dược sĩ ĐH
-            </span>
-          </div>
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-slate-50">
+            Kho học phần &amp; Thực tập D25B
+          </h1>
 
           <div className="relative w-full md:w-72 shrink-0">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -701,108 +615,121 @@ export function StudyView({
           </div>
 
           {/* Priority Lookup: Tài liệu & Liên kết nhanh + Inline Small Preview Window Below */}
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <h3 className="text-xs uppercase tracking-widest text-cyan-400 font-semibold">
-                Truy cập nhanh tài liệu &amp; thư mục ({activeCourse.links.length})
-              </h3>
-              {firstPreviewableUrl && (
-                <span className="text-[11px] text-slate-400">
-                  Nhấn vào thẻ để xem trước ở khung bên dưới hoặc mở tab mới
-                </span>
-              )}
-            </div>
+          {(() => {
+            const reportSubmissionLinks =
+              activeCourse.id === 'hpt1'
+                ? activeCourse.links.filter(
+                    (l) => l.kind === 'forms' && l.label.startsWith('Nộp báo cáo THHPT1')
+                  )
+                : [];
+            const regularLinks =
+              reportSubmissionLinks.length > 0
+                ? activeCourse.links.filter((l) => !reportSubmissionLinks.includes(l))
+                : activeCourse.links;
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {activeCourse.links.map((link) => {
-                const { Icon, tag } = getLinkMeta(link.kind);
-                const isPreviewable = getPreviewInfo(link.url, folderMode) !== null;
-                const isPreviewing = activePreviewLink?.url === link.url;
-
-                if (!isPreviewable) {
-                  return (
-                    <a
-                      key={link.url + link.label}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center justify-between gap-3 px-4 py-3 bg-[#0B1120] hover:bg-[#131C31] border border-slate-800 hover:border-cyan-400/60 rounded-lg transition-colors"
-                    >
-                      <span className="flex items-center gap-3 min-w-0">
-                        <span className="p-2 rounded-md bg-cyan-400/10 text-cyan-400 shrink-0">
-                          <Icon className="w-4 h-4" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-sm font-medium text-slate-100 group-hover:text-cyan-300 truncate">
-                            {link.label}
-                          </span>
-                          <span className="block text-[11px] font-mono text-slate-400">
-                            {tag}
-                          </span>
-                        </span>
-                      </span>
-                      <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 shrink-0" />
-                    </a>
-                  );
-                }
-
-                return (
-                  <div
-                    key={link.url + link.label}
-                    className={`group flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border transition-colors ${
-                      isPreviewing
-                        ? 'bg-cyan-400/12 border-cyan-400 shadow-[0_0_0_1px_rgba(34,211,238,0.2)]'
-                        : 'bg-[#0B1120] hover:bg-[#131C31] border-slate-800 hover:border-cyan-400/50'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setPreviewUrl(link.url)}
-                      className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
-                    >
-                      <span
-                        className={`p-2 rounded-md shrink-0 ${
-                          isPreviewing
-                            ? 'bg-cyan-400 text-slate-950'
-                            : 'bg-cyan-400/10 text-cyan-400'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                      </span>
-                      <span className="min-w-0">
-                        <span
-                          className={`block text-sm font-medium truncate ${
-                            isPreviewing
-                              ? 'text-cyan-200 font-semibold'
-                              : 'text-slate-100 group-hover:text-cyan-300'
-                          }`}
-                        >
-                          {link.label}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
-                          <span>{tag}</span>
-                          <span aria-hidden="true">·</span>
-                          <span className={isPreviewing ? 'text-cyan-300' : 'text-cyan-400/80'}>
-                            {isPreviewing ? 'Đang xem' : 'Xem trước'}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Mở trong tab mới"
-                      aria-label={`Mở ${link.label} trong tab mới`}
-                      className="p-2 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/70 rounded-md transition-colors shrink-0"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
+            return (
+              <div className="space-y-6">
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h3 className="text-xs uppercase tracking-widest text-cyan-400 font-semibold">
+                      Truy cập nhanh tài liệu &amp; thư mục ({regularLinks.length})
+                    </h3>
                   </div>
-                );
-              })}
-            </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {regularLinks.map((link) => {
+                      const { Icon, tag } = getLinkMeta(link.kind);
+                      const isPreviewable = getPreviewInfo(link.url, folderMode) !== null;
+                      const isPreviewing = activePreviewLink?.url === link.url;
+
+                      if (!isPreviewable) {
+                        return (
+                          <a
+                            key={link.url + link.label}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-center justify-between gap-3 px-4 py-3 bg-[#0B1120] hover:bg-[#131C31] border border-slate-800 hover:border-cyan-400/60 rounded-lg transition-colors"
+                          >
+                            <span className="flex items-center gap-3 min-w-0">
+                              <span className="p-2 rounded-md bg-cyan-400/10 text-cyan-400 shrink-0">
+                                <Icon className="w-4 h-4" />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-sm font-medium text-slate-100 group-hover:text-cyan-300 truncate">
+                                  {link.label}
+                                </span>
+                                <span className="block text-[11px] font-mono text-slate-400">
+                                  {tag}
+                                </span>
+                              </span>
+                            </span>
+                            <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 shrink-0" />
+                          </a>
+                        );
+                      }
+
+                      return (
+                        <HoverPreviewCard
+                          key={link.url + link.label}
+                          url={link.url}
+                          label={link.label}
+                          folderMode={folderMode}
+                          delayMs={2000}
+                          onExpandPreview={setPreviewUrl}
+                        >
+                          <div
+                            className={`group flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border transition-colors ${
+                              isPreviewing
+                                ? 'bg-cyan-400/12 border-cyan-400 shadow-[0_0_0_1px_rgba(34,211,238,0.2)]'
+                                : 'bg-[#0B1120] hover:bg-[#131C31] border-slate-800 hover:border-cyan-400/50'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setPreviewUrl(link.url)}
+                              className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
+                            >
+                              <span
+                                className={`p-2 rounded-md shrink-0 ${
+                                  isPreviewing
+                                    ? 'bg-cyan-400 text-slate-950'
+                                    : 'bg-cyan-400/10 text-cyan-400'
+                                }`}
+                              >
+                                <Icon className="w-4 h-4" />
+                              </span>
+                              <span className="min-w-0">
+                                <span
+                                  className={`block text-sm font-medium truncate ${
+                                    isPreviewing
+                                      ? 'text-cyan-200 font-semibold'
+                                      : 'text-slate-100 group-hover:text-cyan-300'
+                                  }`}
+                                >
+                                  {link.label}
+                                </span>
+                                <span className="block text-[11px] font-mono text-slate-400">
+                                  {tag}
+                                </span>
+                              </span>
+                            </button>
+
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Mở trong tab mới"
+                              aria-label={`Mở ${link.label} trong tab mới`}
+                              className="p-2 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/70 rounded-md transition-colors shrink-0"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        </HoverPreviewCard>
+                      );
+                    })}
+                  </div>
 
             {/* Small Inline Preview Window Below File Links */}
             {activePreviewLink && activePreviewInfo ? (
@@ -901,7 +828,14 @@ export function StudyView({
                 </div>
               )
             )}
-          </div>
+                </div>
+
+                {reportSubmissionLinks.length > 0 && (
+                  <ReportQrGrid links={reportSubmissionLinks} />
+                )}
+              </div>
+            );
+          })()}
 
           {/* Scannable Structured Grid: Highlights + Chapters */}
           {(activeCourse.highlights.length > 0 ||
@@ -1056,9 +990,6 @@ export function StudyView({
                   <th scope="col" className="py-2.5 px-3 font-medium">
                     Tên học phần
                   </th>
-                  <th scope="col" className="py-2.5 px-3 font-medium hidden md:table-cell">
-                    Phân loại
-                  </th>
                   <th scope="col" className="py-2.5 px-3 font-medium whitespace-nowrap">
                     Học kỳ
                   </th>
@@ -1093,12 +1024,6 @@ export function StudyView({
                       >
                         {course.name}
                       </button>
-                      <p className="mt-1 text-xs text-slate-400 line-clamp-1 max-w-2xl">
-                        {course.summary}
-                      </p>
-                    </td>
-                    <td className="py-3.5 px-3 align-top text-xs text-slate-300 hidden md:table-cell whitespace-nowrap">
-                      {course.category}
                     </td>
                     <td className="py-3.5 px-3 align-top text-xs font-mono text-slate-400 whitespace-nowrap">
                       {COMPACT_SEMESTER_MAP[course.semesterKey]}

@@ -172,6 +172,7 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: nextHistory.map((m) => ({ role: m.role, text: m.text })),
+          forceAi,
         }),
       });
 
@@ -289,12 +290,9 @@ export function AiChatWidget({ onNavigate }: AiChatWidgetProps) {
           >
             {messages.length === 0 ? (
               <div className="space-y-4">
-                <div className="bg-[#0E1525] border border-slate-800 rounded-lg p-3.5 text-xs sm:text-sm text-slate-200 leading-relaxed space-y-1.5">
+                <div className="bg-[#0E1525] border border-slate-800 rounded-lg p-3.5 text-xs sm:text-sm text-slate-200 leading-relaxed">
                   <p>
                     Kính chào quý ngài! Tôi là <strong className="text-cyan-300">Quản trang AI của The D25B Times</strong>.
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    Các câu hỏi tra cứu thông tin, lịch học hay quy chế sẽ được hệ thống <strong>tự dò nội bộ (không tốn lượt AI)</strong>. Gemini AI chỉ kích hoạt cho câu hỏi so sánh, phân tích hoặc lập kế hoạch.
                   </p>
                 </div>
 

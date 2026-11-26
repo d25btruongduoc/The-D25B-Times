@@ -4,6 +4,7 @@ import {
   EXTERNAL_STUDY_TOOLS,
   LIBRARY_RESOURCES,
 } from '../data/d25bData';
+import { HoverPreviewCard } from './HoverMiniPreview';
 
 export function LibraryView() {
   return (
@@ -64,25 +65,29 @@ export function LibraryView() {
               </div>
 
               <div className="mt-5 pt-4 border-t border-slate-800 flex items-center gap-4">
-                <a
-                  href={book.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-cyan-400 hover:text-cyan-300"
-                >
-                  <span>Đọc / Xem trên Drive</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-                {book.downloadUrl && (
+                <HoverPreviewCard url={book.url} label={book.title}>
                   <a
-                    href={book.downloadUrl}
+                    href={book.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-slate-100"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-cyan-400 hover:text-cyan-300"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Tải PDF</span>
+                    <span>Đọc / Xem trên Drive</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
+                </HoverPreviewCard>
+                {book.downloadUrl && (
+                  <HoverPreviewCard url={book.downloadUrl} label={`${book.title} (PDF)`}>
+                    <a
+                      href={book.downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-slate-100"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Tải PDF</span>
+                    </a>
+                  </HoverPreviewCard>
                 )}
               </div>
             </article>
