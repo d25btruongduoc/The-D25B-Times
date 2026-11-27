@@ -1211,6 +1211,58 @@ export const COURSES: CourseItem[] = [
 
 export const DEADLINES: DeadlineTask[] = [
   {
+    id: 'drl-hk1-2026-2027',
+    title: 'Chấm Điểm rèn luyện Học kỳ 1 Năm học 2026–2027 (BCH Đoàn – Hội Trường Dược)',
+    category: 'Hoạt động & ĐRL',
+    dueLabel: '07h00 27/11/2026 – 17h00 29/11/2026',
+    eventDate: '2026-11-29',
+    expiresAt: '2026-11-29T17:00:00+07:00',
+    statusLabel: 'Khẩn cấp',
+    audience: 'Sinh viên toàn trường (DCQ2022–DCQ2025 & HD24–HD25)',
+    summary:
+      'Ban Chấp Hành Đoàn – Hội Trường Dược thông báo triển khai chấm điểm rèn luyện HK1 năm học 2026–2027 qua Microsoft Forms từ 07h00 ngày 27/11 đến 17h00 ngày 29/11/2026. Sinh viên cần chọn đúng biểu mẫu tương ứng với khối lớp của mình.',
+    details: [
+      'Thời gian chấm qua Forms: Từ 07h00 ngày 27/11/2026 đến 17h00 ngày 29/11/2026.',
+      'Thời gian ghi nhận hoạt động HK1: 04/05/2026 – 15/11/2026.',
+      'Khối D25B (DCQ2025): Điền đúng Form DCQ2025 (link: https://forms.cloud.microsoft/r/BxgkvkGrrT).',
+      'Lưu ý chọn đúng biểu mẫu: Sinh viên cần lựa chọn đúng biểu mẫu Microsoft Forms tương ứng với khối lớp mình đang theo học trước khi tiến hành kê khai thông tin. Trường hợp điền sai Forms, sinh viên tự chịu trách nhiệm và BCH Đoàn – Hội Trường Dược không hỗ trợ chuyển dữ liệu.',
+      'Hình thức nộp minh chứng: Minh chứng được nộp vào cuối Forms dưới dạng file PDF theo mẫu quy định.',
+      'CÚ PHÁP ĐẶT TÊN FILE MINH CHỨNG: Tổ - MSSV - Họ và tên - Lớp - Ngày tháng năm sinh (Tổ lấy 2 chữ số; Ví dụ: 01 – 511186433 - Nguyễn Văn A – D18 – 07052000).',
+      'LƯU Ý ĐẶC BIỆT: Trường hợp sinh viên đặt tên file sai cú pháp TRỪ 2 ĐIỂM vào điểm tổng.',
+      'Điểm học tập và điểm thưởng liên quan: Sẽ được BCH Trường Dược cộng sau khi có bảng điểm chính thức từ đào tạo.',
+      'Hầu hết các chương trình của HK1 2026–2027 đã được tổng hợp trong danh sách hoạt động cấp Trường Dược. Các hoạt động ngoài danh sách dựa theo Bảng hướng dẫn chấm ĐRL 2026–2027.',
+    ],
+    links: [
+      {
+        label: 'Form Chấm ĐRL Lớp DCQ2025 (D25B)',
+        url: 'https://forms.cloud.microsoft/r/BxgkvkGrrT',
+        kind: 'forms',
+      },
+      {
+        label: '[2026 - 2027 HK1] Tổng hợp danh sách SV tham gia hoạt động cấp Trường Dược (.xlsx)',
+        url: 'https://umpedu-my.sharepoint.com/:x:/g/personal/doanhoikhoaduoc_ump_edu_vn/IQCkLVT7m6QtTaX7CbRjbvD4Ab85Apadth3bQhDaE3J6JBs?e=DdeNvR',
+        kind: 'sheets',
+      },
+      {
+        label: 'Bảng hướng dẫn chấm Điểm rèn luyện năm học 2026 – 2027',
+        url: 'https://docs.google.com/spreadsheets/d/158atOdxiTKE1HZ3jUSk_tBHqG2gxePDQjHGFUga4KJo/edit?usp=drive_link',
+        kind: 'sheets',
+      },
+      {
+        label: 'Mẫu file minh chứng (.docx)',
+        url: 'https://umpedu-my.sharepoint.com/:w:/g/personal/doanhoikhoaduoc_ump_edu_vn/ERP9PqaAvkxKt_rLG1TMI3UBuVQ2XK1v56OMiUZka7lGbA?e=8WwJee',
+        kind: 'docs',
+      },
+      {
+        label: 'File Thông báo chấm ĐRL HK1 2026–2027 (.pdf)',
+        url: '/assets/aistudio/1._THO_NG_BA_O_CHA__M__RL_HK1_2026-2027_9e978317.pdf',
+        kind: 'drive',
+      },
+    ],
+    actionTab: { section: 'handbook', handbookTab: 'drl', label: 'Mở Cẩm nang ĐRL & Các khối lớp' },
+    externalUrl: 'https://forms.cloud.microsoft/r/BxgkvkGrrT',
+  },
+  {
     id: 'dkhp-k26-hk2',
     title: 'Dự kiến khóa K26 đăng ký học phần HK2 năm học 2026–2027 (Cổng SV UMP)',
     category: 'Đăng ký học phần',
@@ -1360,55 +1412,126 @@ export const DEADLINES: DeadlineTask[] = [
   },
 ];
 
-// Thông báo các thay đổi chính sau khi cập nhật app lên GitHub — hiển thị tự động trong 7 ngày
+// Thông báo các thay đổi chính trên ứng dụng — hiển thị tự động trong 7 ngày
 export const APP_UPDATES: AppUpdateItem[] = [
   {
+    id: 'upd-drl-hk1-2026-2027',
+    title: 'Đợt chấm Điểm rèn luyện HK1 (27/11 – 29/11/2026)',
+    category: 'Cẩm nang & Thông báo',
+    updatedAt: '2026-11-26T20:00:00+07:00',
+    ttlDays: 7,
+    summary:
+      'Đoàn – Hội mở cổng chấm ĐRL HK1 từ 07h00 ngày 27/11 đến 17h00 ngày 29/11/2026 qua Microsoft Forms.',
+    details: [
+      'Thời gian chấm qua Forms: Từ 07h00 ngày 27/11 đến 17h00 ngày 29/11/2026.',
+      'Khối D25B: Điền đúng biểu mẫu lớp DCQ2025 để dữ liệu được ghi nhận chính xác.',
+      'File minh chứng PDF nộp cuối form bắt buộc đặt tên: Tổ - MSSV - Họ và tên - Lớp - Ngày sinh (đặt sai bị trừ 2 điểm).',
+      'Đã tích hợp công cụ tạo tên file tự động trong mục Cẩm nang để các bạn sao chép chuẩn 100%.',
+    ],
+    target: { section: 'handbook', handbookTab: 'drl', label: 'Mở Form & Hướng dẫn' },
+  },
+  {
     id: 'upd-release-thhpt1-qr-hover-20261126',
-    title: 'QR Code nộp báo cáo THHPT1 & Xem trước nhanh khi rê chuột 2 giây',
-    category: 'Tính năng mới',
+    title: 'Mã QR nộp bài Hóa Phân Tích 1 & Xem trước tài liệu',
+    category: 'Cập nhật học tập',
     updatedAt: '2026-11-26T10:30:00+07:00',
     ttlDays: 7,
     summary:
-      'Bổ sung thẻ QR Code quét nhanh cho toàn bộ 12 link nộp báo cáo Thực hành Hóa Phân Tích 1 và tự động mở khung xem trước nhỏ khi đưa chuột vào mục tài liệu trong 2 giây.',
+      'Thêm mã QR quét nhanh link nộp báo cáo Thực hành Hóa Phân Tích 1 và tự động xem trước tài liệu khi rê chuột.',
     details: [
-      'Mục Nộp báo cáo THHPT1 hiển thị trực quan thẻ QR Code kèm nút mở link theo từng giảng viên phụ trách (bấm vào mã QR để phóng to khi quét bằng điện thoại).',
-      'Khi đưa chuột vào các mục tài liệu Drive, Docs, Sheets hoặc Video trong 2 giây sẽ tự động hiện bản xem trước nhỏ ngay cạnh thẻ.',
-      'Tinh gọn giao diện danh sách Kho học phần và khung Quản trang AI để tra cứu nhanh và thoáng hơn.',
+      'Quét mã QR trên điện thoại để mở nhanh link nộp bài THHPT1 theo từng giảng viên phụ trách.',
+      'Rê chuột vào tài liệu Drive, Docs hoặc Sheets trong 2 giây để xem trước nội dung mà không cần rời trang.',
+      'Giao diện học phần được làm gọn, trực quan và dễ tra cứu hơn.',
     ],
-    target: { section: 'study', courseId: 'hpt1', label: 'Mở Hóa Phân Tích (THHPT1)' },
+    target: { section: 'study', courseId: 'hpt1', label: 'Xem môn Hóa Phân Tích 1' },
   },
   {
     id: 'upd-release-y2hk2-deadline-20261126',
-    title: 'Thêm mục Năm 2 · HK2 (Hóa Phân Tích 2) & Làm nổi bật Deadline ưu tiên',
+    title: 'Bổ sung tài liệu Năm 2 (HK2) & Nổi bật hạn nộp bài',
     category: 'Cập nhật học tập',
     updatedAt: '2026-11-26T09:00:00+07:00',
     ttlDays: 7,
     summary:
-      'Mở thêm tab học kỳ Năm 2 – HK2 với môn Hóa Phân Tích 2 (THHPT2), làm nổi bật khu vực nhiệm vụ còn hiệu lực và tối ưu tìm kiếm nội bộ.',
+      'Cập nhật thư mục tài liệu môn Hóa Phân Tích 2 và làm rõ các mốc deadline học tập quan trọng.',
     details: [
-      'Bổ sung mục Năm 2 · HK2 trong Kho học phần kèm thư mục Drive tài liệu môn Hóa Phân Tích 2 (THHPT2).',
-      'Khu vực Nhiệm vụ & Mốc thời gian còn hiệu lực tại trang Deadline được làm nổi bật để dễ theo dõi các hạn sắp tới.',
-      'Nâng cấp khả năng tìm kiếm nội bộ không tốn lượt và tối ưu Quản trang AI.',
+      'Bổ sung môn Hóa Phân Tích 2 (Năm 2 – HK2) kèm thư mục tài liệu học tập đầy đủ.',
+      'Khu vực Lịch Deadline làm nổi bật các mốc thời gian đang mở để sinh viên không bỏ lỡ hạn nộp.',
+      'Nâng cấp tìm kiếm nội bộ giúp tra cứu bài giảng và thông báo nhanh hơn.',
     ],
     target: { section: 'study', label: 'Mở Kho học phần' },
   },
   {
     id: 'upd-release-github-sync-20261126',
-    title: 'Đồng bộ thông báo cập nhật từ GitHub & Triển khai GitHub Pages',
+    title: 'Tự động cập nhật dữ liệu & Ổn định tài khoản lớp',
     category: 'Cẩm nang & Thông báo',
     updatedAt: '2026-11-26T08:00:00+07:00',
     ttlDays: 7,
     summary:
-      'Mục Thông báo cập nhật tự động ghi nhận các thay đổi chính sau mỗi lần cập nhật ứng dụng lên GitHub.',
+      'Hệ thống tự động đồng bộ các thông báo mới nhất và nâng cấp tính năng sao lưu tiến độ học tập cá nhân.',
     details: [
-      'Tự động đồng bộ các bản cập nhật mới đẩy lên nhánh main trên GitHub (hiển thị trong vòng 7 ngày kể từ lúc cập nhật).',
-      'Ổn định quy trình triển khai tĩnh lên GitHub Pages cùng tính năng đăng nhập Thành viên (Google & Email/Mật khẩu).',
+      'Tự động đồng bộ các cập nhật, lịch học và tài liệu mới từ Ban cán sự lớp.',
+      'Hỗ trợ đăng nhập bằng Google hoặc Email để lưu lại tiến độ hoàn thành deadline và học phần đã đánh dấu.',
+      'Tối ưu khả năng hiển thị mượt mà trên cả điện thoại và máy tính.',
     ],
-    target: { section: 'deadline', label: 'Xem lịch & cập nhật' },
+    target: { section: 'deadline', label: 'Xem Lịch & Thông báo' },
   },
 ];
 
 export const SCHOOL_NOTICES: SchoolNoticeItem[] = [
+  {
+    id: 'notice-drl-hk1-2026-2027',
+    title: 'Thông báo về việc Triển khai chấm điểm rèn luyện HK1 năm học 2026–2027',
+    category: 'Hoạt động Trường',
+    dateLabel: '07h00 27/11/2026 – 17h00 29/11/2026 · BCH Đoàn – Hội Trường Dược',
+    audience: 'Toàn thể sinh viên Trường Dược (DCQ2022 – DCQ2025 & HD24 – HD25)',
+    summary:
+      'Thân gửi các bạn sinh viên, Ban Chấp Hành Đoàn – Hội Trường Dược xin thông báo về việc triển khai chấm điểm rèn luyện HK1 năm học 2026–2027. Thời gian chấm qua forms: Từ 07h00 ngày 27/11/2026 đến 17h00 ngày 29/11/2026.',
+    details: [
+      'Thân gửi các bạn sinh viên,',
+      'Ban Chấp Hành Đoàn – Hội Trường Dược xin thông báo về việc triển khai chấm điểm rèn luyện HK1 năm học 2026–2027.',
+      'Thông tin chi tiết về nội dung, hình thức và hướng dẫn chấm điểm được đính kèm trong file thông báo. Các bạn vui lòng đọc kỹ hướng dẫn và thực hiện chấm điểm theo đúng quy định.',
+      'Một số lưu ý quan trọng:',
+      '- Thời gian chấm qua forms: Từ 07h00 ngày 27/11/2026 đến 17h00 ngày 29/11/2026.',
+      '- Thời gian ghi nhận hoạt động HK1: 04/05/2026 - 15/11/2026.',
+      '- Sinh viên cần lựa chọn đúng biểu mẫu Microsoft Forms tương ứng với khối lớp mình đang theo học trước khi tiến hành kê khai thông tin.',
+      '- Vui lòng kiểm tra kỹ các thông tin đã kê khai trước khi gửi biểu mẫu. Trường hợp điền sai Forms, sinh viên tự chịu trách nhiệm và BCH Đoàn – Hội Trường Dược không hỗ trợ chuyển hoặc khôi phục dữ liệu giữa các biểu mẫu.',
+      'Quy chuẩn nộp minh chứng: Minh chứng được nộp vào cuối Forms dưới dạng file PDF theo mẫu (MẪU FILE MINH CHỨNG).',
+      'CÚ PHÁP ĐẶT TÊN FILE MINH CHỨNG: Tổ - MSSV - Họ và tên - Lớp - Ngày tháng năm sinh (Tổ lấy 2 chữ số; Ví dụ: 01 – 511186433 - Nguyễn Văn A – D18 – 07052000).',
+      'LƯU Ý ĐẶC BIỆT: Trường hợp sinh viên đặt tên file sai cú pháp TRỪ 2 ĐIỂM vào điểm tổng.',
+      'Điểm học tập và các điểm thưởng liên quan sẽ được BCH Trường Dược cộng sau khi có bảng điểm chính thức từ đào tạo.',
+      'Hầu hết các chương trình của học kỳ 1 năm học 2026-2027 đã được tổng hợp và tính điểm trong DANH SÁCH MỘT SỐ HOẠT ĐỘNG, CHƯƠNG TRÌNH HỌC KỲ 1 NĂM HỌC 2025-2026. Đối với các chương trình, hoạt động không có trong Danh sách, điểm sẽ được quy định dựa theo BẢNG HƯỚNG DẪN CHẤM ĐIỂM RÈN LUYỆN NĂM HỌC 2026 - 2027.',
+      'Đề nghị các bạn chủ động theo dõi thông báo, thực hiện chấm điểm trong thời gian quy định và tránh để sát thời hạn mới hoàn thành nhằm hạn chế các sai sót phát sinh.',
+      'Chúc các bạn hoàn thành tốt đợt chấm điểm rèn luyện!',
+      'Trân trọng, Ban Chấp Hành Đoàn – Hội Trường Dược.',
+    ],
+    links: [
+      {
+        label: 'Link Forms Lớp DCQ2025 (D25B)',
+        url: 'https://forms.cloud.microsoft/r/BxgkvkGrrT',
+        kind: 'forms',
+      },
+      {
+        label: '[2026 - 2027 HK1] Tổng hợp danh sách SV tham gia hoạt động cấp Trường Dược (.xlsx)',
+        url: 'https://umpedu-my.sharepoint.com/:x:/g/personal/doanhoikhoaduoc_ump_edu_vn/IQCkLVT7m6QtTaX7CbRjbvD4Ab85Apadth3bQhDaE3J6JBs?e=DdeNvR',
+        kind: 'sheets',
+      },
+      {
+        label: 'Bảng hướng dẫn chấm Điểm rèn luyện năm học 2026 – 2027',
+        url: 'https://docs.google.com/spreadsheets/d/158atOdxiTKE1HZ3jUSk_tBHqG2gxePDQjHGFUga4KJo/edit?usp=drive_link',
+        kind: 'sheets',
+      },
+      {
+        label: 'Mẫu file minh chứng (.docx)',
+        url: 'https://umpedu-my.sharepoint.com/:w:/g/personal/doanhoikhoaduoc_ump_edu_vn/ERP9PqaAvkxKt_rLG1TMI3UBuVQ2XK1v56OMiUZka7lGbA?e=8WwJee',
+        kind: 'docs',
+      },
+      {
+        label: 'File Thông báo chấm ĐRL HK1 2026–2027 (.pdf)',
+        url: '/assets/aistudio/1._THO_NG_BA_O_CHA__M__RL_HK1_2026-2027_9e978317.pdf',
+        kind: 'drive',
+      },
+    ],
+  },
   {
     id: 'notice-dkhp-hk2',
     title: 'Quy định & Thời khóa biểu dự kiến Đăng ký học phần HK2 NH 2026–2027',
@@ -1722,7 +1845,61 @@ export const ORIENTATION_DOCS = [
   },
 ];
 
+export const DRL_CLASS_FORMS = [
+  {
+    classId: 'DCQ2025',
+    label: 'Lớp DCQ2025 (Khóa D25B – Chính thức)',
+    url: 'https://forms.cloud.microsoft/r/BxgkvkGrrT',
+    isCurrentClass: true,
+  },
+  {
+    classId: 'DCQ2024',
+    label: 'Lớp DCQ2024',
+    url: 'https://forms.cloud.microsoft/r/TAXUDm8pkA',
+  },
+  {
+    classId: 'DCQ2023',
+    label: 'Lớp DCQ2023',
+    url: 'https://forms.cloud.microsoft/r/ZKS9SiZWEY',
+  },
+  {
+    classId: 'DCQ2022',
+    label: 'Lớp DCQ2022',
+    url: 'https://forms.cloud.microsoft/r/5kdwtPa7Jr',
+  },
+  {
+    classId: 'HD24',
+    label: 'Lớp HD24',
+    url: 'https://forms.cloud.microsoft/r/ezK2scwkVf',
+  },
+  {
+    classId: 'HD25',
+    label: 'Lớp HD25',
+    url: 'https://forms.cloud.microsoft/r/HfTe1gD7bC',
+  },
+];
+
 export const DRL_LINKS = [
+  {
+    label: '🔥 [MỚI] Form chấm ĐRL HK1 2026–2027 – Lớp DCQ2025 (D25B)',
+    url: 'https://forms.cloud.microsoft/r/BxgkvkGrrT',
+  },
+  {
+    label: '📋 [2026 - 2027 HK1] Tổng hợp danh sách SV tham gia hoạt động cấp Trường Dược (.xlsx)',
+    url: 'https://umpedu-my.sharepoint.com/:x:/g/personal/doanhoikhoaduoc_ump_edu_vn/IQCkLVT7m6QtTaX7CbRjbvD4Ab85Apadth3bQhDaE3J6JBs?e=DdeNvR',
+  },
+  {
+    label: '📖 Bảng hướng dẫn chấm Điểm rèn luyện năm học 2026 - 2027 (Google Sheets)',
+    url: 'https://docs.google.com/spreadsheets/d/158atOdxiTKE1HZ3jUSk_tBHqG2gxePDQjHGFUga4KJo/edit?usp=drive_link',
+  },
+  {
+    label: '📝 Mẫu file minh chứng ĐRL Trường Dược (.docx)',
+    url: 'https://umpedu-my.sharepoint.com/:w:/g/personal/doanhoikhoaduoc_ump_edu_vn/ERP9PqaAvkxKt_rLG1TMI3UBuVQ2XK1v56OMiUZka7lGbA?e=8WwJee',
+  },
+  {
+    label: '📄 Thông báo chấm ĐRL HK1 2026–2027 gốc (.pdf)',
+    url: '/assets/aistudio/1._THO_NG_BA_O_CHA__M__RL_HK1_2026-2027_9e978317.pdf',
+  },
   {
     label: 'Form đóng góp chương trình kiếm Điểm rèn luyện (Google Form)',
     url: 'https://docs.google.com/forms/d/e/1FAIpQLSf-qddVLQMVORVSJIRNFNBfvkmO9zZvfX9CsSEQVDvuZ2hyxg/viewform',
@@ -1736,24 +1913,12 @@ export const DRL_LINKS = [
     url: 'https://docs.google.com/spreadsheets/d/1CW4JKfym2rzAHF-Go2sSw0LYvpMvLES1mPqnXTQMU3M/htmlembed',
   },
   {
-    label: 'Bảng hướng dẫn chấm ĐRL 2025–2026 & HK2 (Google Sheets)',
-    url: 'https://docs.google.com/spreadsheets/d/158atOdxiTKE1HZ3jUSk_tBHqG2gxePDQjHGFUga4KJo/edit?usp=drive_link',
-  },
-  {
-    label: '[2025–2026 HK2] Tổng hợp danh sách SV tham gia hoạt động cấp Trường Dược (.xlsx)',
-    url: 'https://umpedu-my.sharepoint.com/:x:/g/personal/doanhoikhoaduoc_ump_edu_vn/IQByUZhLtz-1R7ENgzNKB5IXARn--6csQkrIxeky4zYA1UU?e=nnabgm',
-  },
-  {
     label: 'Danh sách chương trình dự kiến kiếm ĐRL 2026',
     url: 'https://docs.google.com/spreadsheets/d/1x82gJGgPux0gScbHioKb2nGnFnj9l3e_EA5kIsYh_2A/edit?usp=drivesdk',
   },
   {
     label: 'Form chấm mẫu Điểm rèn luyện Trường Dược',
     url: 'https://forms.office.com/r/nhh9ZsR6Fd',
-  },
-  {
-    label: 'Mẫu file minh chứng ĐRL Trường Dược (.docx)',
-    url: 'https://umpedu-my.sharepoint.com/:w:/g/personal/doanhoikhoaduoc_ump_edu_vn/ERP9PqaAvkxKt_rLG1TMI3UBuVQ2XK1v56OMiUZka7lGbA?e=8WwJee',
   },
   {
     label: 'Danh sách hoạt động HK1 2025–2026 (trước 30/11/2025)',
@@ -1763,14 +1928,28 @@ export const DRL_LINKS = [
 
 export const DRL_GUIDES = [
   {
+    id: 'drl-hk1-2026-2027-notice',
+    title: 'Thông báo Triển khai Chấm ĐRL HK1 Năm học 2026–2027 (27/11 – 29/11/2026)',
+    badge: 'Đang diễn ra',
+    items: [
+      'Thời gian chấm qua Forms: Từ 07h00 ngày 27/11/2026 đến 17h00 ngày 29/11/2026.',
+      'Thời gian ghi nhận hoạt động HK1: 04/05/2026 – 15/11/2026.',
+      'Hình thức: Chấm qua Microsoft Forms. Khối D25B chọn biểu mẫu DCQ2025.',
+      'LƯU Ý CÚ PHÁP TÊN FILE MINH CHỨNG (PDF): Tổ - MSSV - Họ và tên - Lớp - Ngày tháng năm sinh (Tổ lấy 2 chữ số; Ví dụ: 01 – 511186433 - Nguyễn Văn A – D18 – 07052000).',
+      'CẢNH BÁO: Trường hợp sinh viên đặt tên file sai cú pháp TRỪ 2 ĐIỂM VÀO ĐIỂM TỔNG.',
+      'Điểm học tập và điểm thưởng sẽ được BCH Trường Dược cộng sau khi có bảng điểm chính thức từ Đào tạo.',
+      'Kiểm tra kỹ thông tin trước khi gửi Forms; BCH Đoàn – Hội không hỗ trợ chuyển dữ liệu giữa các biểu mẫu.',
+    ],
+  },
+  {
     id: 'drl-2026-rules',
     title: 'Quy định & Hướng dẫn Điểm rèn luyện 2026 (BCH Đoàn Hội Trường Dược)',
-    badge: 'Quy định 2026',
+    badge: 'Quy định chung',
     items: [
       'Hình thức chấm: Thực hiện qua Form chuẩn của Đoàn Hội Trường Dược gửi về các lớp khi có thông báo chính thức từ Phòng KH-ĐT-ĐN.',
       'Minigame: Các chương trình Minigame có hình thức sao chép và dán (copy-paste) câu trả lời sẽ KHÔNG được ghi nhận vào kết quả rèn luyện.',
-      'Quy định đặt tên file minh chứng PDF chuẩn: Tổ - MSSV - Họ và tên - Lớp - Ngày tháng năm sinh (Tổ lấy 2 chữ số, ví dụ: 01 - 511186433 - Nguyễn Văn A - D18 - 07052000). Đặt sai cú pháp bị TRỪ 2 ĐIỂM vào điểm tổng.',
-      'Chú ý HK2 2025–2026: Điểm học tập và điểm thưởng được BCH Trường Dược cộng sau khi có bảng điểm chính thức từ Đào tạo.',
+      'Quy định đặt tên file minh chứng PDF chuẩn: Tổ - MSSV - Họ và tên - Lớp - Ngày tháng năm sinh (Tổ lấy 2 chữ số). Đặt sai cú pháp bị TRỪ 2 ĐIỂM vào điểm tổng.',
+      'Điểm học tập và điểm thưởng được BCH Trường Dược cộng sau khi có bảng điểm chính thức từ Đào tạo.',
     ],
   },
 ];

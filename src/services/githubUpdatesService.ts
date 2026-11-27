@@ -17,7 +17,7 @@ export type ActiveAppUpdateItem = AppUpdateItem & {
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const GITHUB_CACHE_KEY = 'd25b_github_commits_cache_v1';
+const GITHUB_CACHE_KEY = 'd25b_github_commits_cache_v2';
 const GITHUB_CACHE_TTL_MS = 15 * 60 * 1000;
 const DEFAULT_GITHUB_REPO = 'd25btruongduoc/The-D25B-Times';
 
@@ -69,7 +69,130 @@ function isTrivialCommit(subject: string): boolean {
   const s = subject.trim().toLowerCase();
   if (!s) return true;
   if (s.startsWith('merge pull request') || s.startsWith('merge branch')) return true;
+  if (
+    s.startsWith('build:') ||
+    s.startsWith('chore:') ||
+    s.startsWith('ci:') ||
+    s.startsWith('test:') ||
+    s.includes('peer deps') ||
+    s.includes('node.js') ||
+    s.includes('esbuild')
+  ) {
+    return true;
+  }
   return false;
+}
+
+interface LocalizedCommitContent {
+  title: string;
+  summary: string;
+  details: string[];
+  category: 'Cẩm nang & Thông báo' | 'Cập nhật học tập' | 'Tính năng mới';
+}
+
+function localizeCommit(subject: string, bodyLines: string[], sha: string): LocalizedCommitContent {
+  const lowerSub = subject.toLowerCase();
+
+  // Known commits on GitHub repository
+  if (lowerSub.includes('site icons') || lowerSub.includes('introduction video')) {
+    return {
+      title: 'Cập nhật biểu tượng (Favicon) & Video hướng dẫn',
+      summary: 'Thiết lập logo D25B làm biểu tượng trang web và nhúng video YouTube giới thiệu vào Góc tuyển dụng.',
+      details: [
+        'Cài đặt logo chính thức của lớp D25B làm biểu tượng hiển thị trên tab trình duyệt (Favicon).',
+        'Nhúng khung phát video YouTube giới thiệu trực tiếp ngay tại Góc tuyển dụng trên trang chủ.',
+      ],
+      category: 'Tính năng mới',
+    };
+  }
+
+  if (
+    lowerSub.includes('enhance error handling') ||
+    lowerSub.includes('notice tools') ||
+    lowerSub.includes('terms of service')
+  ) {
+    return {
+      title: 'Bổ sung Điều khoản dịch vụ & Tối ưu tài khoản',
+      summary: 'Tích hợp các trang Điều khoản dịch vụ, Chính sách quyền riêng tư và cải thiện đăng nhập an toàn.',
+      details: [
+        'Thêm trang Điều khoản dịch vụ và Chính sách quyền riêng tư công khai phục vụ xác thực Google.',
+        'Nâng cấp cơ chế đăng nhập và kiểm tra kết nối tài khoản thành viên ổn định hơn.',
+      ],
+      category: 'Cẩm nang & Thông báo',
+    };
+  }
+
+  if (lowerSub.includes('hóa phân tích 2') || lowerSub.includes('hpt2') || lowerSub.includes('git metadata')) {
+    return {
+      title: 'Bổ sung học phần Hóa Phân Tích 2 & Mã QR nộp bài',
+      summary: 'Thêm tài liệu môn Hóa Phân Tích 2 (Năm 2 – HK2) và bổ sung mã QR quét nhanh nộp bài THHPT1.',
+      details: [
+        'Bổ sung môn Hóa Phân Tích 2 vào Kho học phần kèm thư mục tài liệu Drive.',
+        'Hỗ trợ mã QR quét nhanh link nộp báo cáo Thực hành Hóa Phân Tích 1 theo từng bàn.',
+      ],
+      category: 'Cập nhật học tập',
+    };
+  }
+
+  if (lowerSub.includes('forum') || lowerSub.includes('profile views')) {
+    return {
+      title: 'Mở Diễn đàn trao đổi & Trang cá nhân',
+      summary: 'Bổ sung Diễn đàn hỏi đáp sinh viên D25B và trang hồ sơ học tập cá nhân.',
+      details: [
+        'Ra mắt phân khu Diễn đàn chia sẻ tài liệu và thảo luận học tập.',
+        'Cho phép tùy biến thông tin cá nhân và quản lý tiến độ hoàn thành deadline.',
+      ],
+      category: 'Tính năng mới',
+    };
+  }
+
+  // Automatic translation for other commits
+  const translateLine = (line: string): string => {
+    let t = line.trim().replace(/^[-*•]\s*/, '');
+    t = t.replace(/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\([^)]*\))?:\s*/i, '');
+    t = t
+      .replace(/\badd\b/gi, 'Thêm')
+      .replace(/\bupdate\b/gi, 'Cập nhật')
+      .replace(/\benhance\b/gi, 'Cải tiến')
+      .replace(/\bimprove\b/gi, 'Tối ưu')
+      .replace(/\bimplement\b/gi, 'Triển khai')
+      .replace(/\bfix\b/gi, 'Sửa lỗi')
+      .replace(/\bremove\b/gi, 'Gỡ bỏ')
+      .replace(/\bsupport\b/gi, 'Hỗ trợ')
+      .replace(/\bfavicon and app icons/gi, 'biểu tượng trang web (Favicon)')
+      .replace(/\bintroduction video\b/gi, 'video hướng dẫn')
+      .replace(/\bhomeview\b/gi, 'trang chủ')
+      .replace(/\bterms of service\b/gi, 'Điều khoản dịch vụ')
+      .replace(/\bprivacy policy\b/gi, 'Chính sách quyền riêng tư')
+      .replace(/\berror handling\b/gi, 'xử lý kết nối')
+      .replace(/\bto assist new users\b/gi, 'hỗ trợ sinh viên')
+      .replace(/\bfor sending notices\b/gi, 'gửi thông báo')
+      .replace(/\bvia api\b/gi, '')
+      .replace(/\bdeadline\b/gi, 'hạn nộp')
+      .replace(/\bcourse\b/gi, 'học phần');
+
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
+
+  const translatedTitle = translateLine(subject);
+  const translatedDetails = bodyLines.map(translateLine).filter(Boolean);
+  const translatedSummary =
+    translatedDetails[0] || 'Cập nhật tính năng và học liệu mới trên cổng thông tin lớp.';
+
+  return {
+    title: translatedTitle,
+    summary: translatedSummary,
+    details:
+      translatedDetails.length > 0
+        ? translatedDetails
+        : ['Cập nhật giao diện và tối ưu trải nghiệm học tập cho sinh viên D25B.'],
+    category:
+      lowerSub.includes('hóa') || lowerSub.includes('học') || lowerSub.includes('course')
+        ? 'Cập nhật học tập'
+        : lowerSub.includes('thông báo') || lowerSub.includes('notice') || lowerSub.includes('auth')
+        ? 'Cẩm nang & Thông báo'
+        : 'Tính năng mới',
+  };
 }
 
 function commitsToUpdates(
@@ -95,19 +218,12 @@ function commitsToUpdates(
         .map((line) => line.replace(/^[-*]\s*/, '').trim())
         .filter(Boolean);
 
-      const summary =
-        bodyLines[0] ||
-        `Phiên bản mới đã được cập nhật lên GitHub (${repo} · #${shortSha}).`;
-
-      const details = [
-        ...bodyLines,
-        `Bản cập nhật từ nhánh main trên GitHub (mã #${shortSha}${c.author ? ` · ${c.author}` : ''}).`,
-      ];
+      const { title, summary, details, category } = localizeCommit(c.subject, bodyLines, c.sha);
 
       return {
         id: `gh-${shortSha}`,
-        title: c.subject,
-        category: 'Tính năng mới' as const,
+        title,
+        category,
         updatedAt: c.date,
         ttlDays,
         summary,

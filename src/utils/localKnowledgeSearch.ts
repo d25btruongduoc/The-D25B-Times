@@ -139,11 +139,11 @@ const TOPIC_RULES: {
   },
   {
     id: 'drl',
-    title: 'Điểm rèn luyện & Sinh viên 5 Tốt',
-    keywords: ['drl', 'diem ren luyen', '5 tot', 'minh chung', '5158', '1706'],
+    title: 'Điểm rèn luyện & Chấm ĐRL HK1 2026–2027',
+    keywords: ['drl', 'diem ren luyen', 'cham drl', 'hk1', 'forms drl', '5 tot', 'minh chung', '5158', '1706'],
     target: { section: 'handbook', handbookTab: 'drl' },
     answer:
-      '• Hệ thống đã tổng hợp đầy đủ bảng hướng dẫn chấm ĐRL, quy chế 5158, phiếu 1706 và biểu mẫu đóng góp hoạt động trong mục **Cẩm nang → ĐRL & SV5T**.\n• Bạn bấm vào thẻ liên quan bên dưới để mở trực tiếp các link biểu mẫu.',
+      '• Đợt chấm ĐRL HK1 NH 2026–2027 diễn ra từ **07h00 ngày 27/11/2026 đến 17h00 ngày 29/11/2026** qua Microsoft Forms.\n• Khối D25B điền đúng Form **DCQ2025**.\n• Tên file minh chứng PDF nộp cuối Form bắt buộc: `Tổ - MSSV - Họ và tên - Lớp - Ngày tháng năm sinh` (Tổ 2 chữ số; Ví dụ: `01 – 511186433 - Nguyễn Văn A – D18 – 07052000`). Đặt sai cú pháp bị **TRỪ 2 ĐIỂM**.\n• Vào mục **Cẩm nang → Điểm rèn luyện & SV 5 Tốt** để lấy link Forms và công cụ tạo tên file chuẩn.',
   },
   {
     id: 'lien-he',

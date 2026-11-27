@@ -187,23 +187,25 @@ export function HomeView({
               className="bg-[#0E1525] border border-slate-800 hover:border-cyan-500/40 rounded-xl p-6 flex flex-col justify-between transition-colors"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
-                  <span className="font-medium text-emerald-300">{upd.category}</span>
-                  <span className="font-mono tabular-nums text-cyan-300">
-                    Mới · Còn {upd.daysRemaining}/7 ngày
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                    {upd.category}
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/30">
+                    Mới
                   </span>
                 </div>
                 <h3 className="mt-2.5 font-heading text-lg font-bold text-slate-50 leading-snug">
                   {upd.title}
                 </h3>
-                <p className="mt-2 text-xs font-mono tabular-nums text-slate-400">
-                  Cập nhật: {new Date(upd.updatedAt).toLocaleDateString('vi-VN')}
+                <p className="mt-1 text-xs font-mono text-slate-400">
+                  {new Date(upd.updatedAt).toLocaleDateString('vi-VN')}
                 </p>
                 <p className="mt-2.5 text-sm text-slate-300 leading-relaxed">{upd.summary}</p>
               </div>
 
               <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-                <span className="text-xs text-slate-400">Tự ẩn sau 7 ngày</span>
+                <span className="text-xs text-slate-400">Bản tin học tập</span>
                 {upd.externalUrl ? (
                   <a
                     href={upd.externalUrl}
@@ -211,7 +213,7 @@ export function HomeView({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 whitespace-nowrap shrink-0"
                   >
-                    <span>Xem trên GitHub</span>
+                    <span>Xem chi tiết</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 ) : (
@@ -227,7 +229,7 @@ export function HomeView({
                     }
                     className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 whitespace-nowrap shrink-0 cursor-pointer"
                   >
-                    Mở cập nhật →
+                    {upd.target?.label ? `${upd.target.label} →` : 'Xem chi tiết →'}
                   </button>
                 )}
               </div>

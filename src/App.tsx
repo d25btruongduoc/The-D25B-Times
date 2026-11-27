@@ -78,6 +78,22 @@ export default function App() {
   });
 
   useEffect(() => {
+    document.title = 'The D25B Times — Cổng thông tin Lớp D25B, Trường Dược ĐHYD TP.HCM';
+    const setFavicon = (rel: string, href: string, type?: string) => {
+      let link = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = rel;
+        document.head.appendChild(link);
+      }
+      link.href = href;
+      if (type) link.type = type;
+    };
+    setFavicon('icon', '/favicon.ico', 'image/x-icon');
+    setFavicon('shortcut icon', '/favicon.ico', 'image/x-icon');
+  }, []);
+
+  useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(completedDeadlines));
     } catch {

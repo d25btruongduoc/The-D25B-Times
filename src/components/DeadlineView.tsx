@@ -1092,12 +1092,17 @@ export function DeadlineView({
               <div className="px-5 py-4 border-b border-slate-800 bg-[#0B1120] flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
-                  <h2 className="font-heading text-base sm:text-lg font-bold text-slate-50">
-                    Cập nhật mới trên The D25B Times
-                  </h2>
+                  <div>
+                    <h2 className="font-heading text-base sm:text-lg font-bold text-slate-50">
+                      Thông báo cập nhật mới trên The D25B Times
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Tổng hợp những tính năng, bài giảng và thông báo mới nhất cho lớp D25B
+                    </p>
+                  </div>
                 </div>
-                <span className="text-[11px] font-mono text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 px-2.5 py-0.5 rounded">
-                  Hiển thị tự động 7 ngày từ ngày sửa đổi
+                <span className="text-[11px] font-medium text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-3 py-1 rounded-full">
+                  Tin mới nhất
                 </span>
               </div>
 
@@ -1112,47 +1117,49 @@ export function DeadlineView({
                         onClick={() => toggleUpdateExpand(upd.id)}
                         className="w-full text-left px-5 py-4 flex items-start justify-between gap-4 hover:bg-[#131C31]/70 transition-colors cursor-pointer"
                       >
-                        <div className="min-w-0 space-y-1">
+                        <div className="min-w-0 space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="font-semibold text-emerald-300">
+                            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                               {upd.category}
                             </span>
-                            <span className="text-slate-600">·</span>
-                            <span className="font-mono text-slate-400">
-                              Cập nhật {modDate}
+                            <span className="text-slate-500">·</span>
+                            <span className="text-slate-400 font-mono text-xs">
+                              {modDate}
                             </span>
-                            <span className="text-slate-600">·</span>
-                            <span className="font-mono text-cyan-300">
-                              Còn {upd.daysRemaining}/7 ngày
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/30">
+                              Mới
                             </span>
                           </div>
                           <h3 className="text-sm sm:text-base font-bold text-slate-100">
                             {upd.title}
                           </h3>
-                          <p className="text-xs sm:text-sm text-slate-400 line-clamp-2">
+                          <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
                             {upd.summary}
                           </p>
                         </div>
-                        <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-cyan-400 shrink-0">
-                          <span>{isOpen ? 'Thu gọn' : 'Chi tiết'}</span>
+                        <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-cyan-400 shrink-0 bg-cyan-950/40 px-2.5 py-1 rounded border border-cyan-500/20">
+                          <span>{isOpen ? 'Thu gọn' : 'Xem chi tiết'}</span>
                           {isOpen ? (
-                            <ChevronUp className="w-4 h-4" />
+                            <ChevronUp className="w-3.5 h-3.5" />
                           ) : (
-                            <ChevronDown className="w-4 h-4" />
+                            <ChevronDown className="w-3.5 h-3.5" />
                           )}
                         </span>
                       </button>
 
                       {isOpen && (
-                        <div className="px-5 pb-5 pt-1 bg-[#0B1120]/70 border-t border-slate-800/70 space-y-3">
-                          <ul className="space-y-2 text-xs sm:text-sm text-slate-300 leading-relaxed list-disc pl-5">
+                        <div className="px-5 pb-5 pt-2 bg-[#0B1120]/70 border-t border-slate-800/70 space-y-3">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            Nội dung chi tiết:
+                          </p>
+                          <ul className="space-y-2 text-xs sm:text-sm text-slate-200 leading-relaxed list-disc pl-5">
                             {upd.details.map((line, i) => (
                               <li key={i}>{line}</li>
                             ))}
                           </ul>
 
                           {(upd.target || upd.externalUrl) && (
-                            <div className="pt-1 flex flex-wrap gap-2">
+                            <div className="pt-2 flex flex-wrap gap-2.5">
                               {upd.target && (
                                 <button
                                   type="button"
@@ -1166,7 +1173,7 @@ export function DeadlineView({
                                       courseId: upd.target!.courseId,
                                     });
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-md cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-lg cursor-pointer transition-colors shadow-sm"
                                 >
                                   <span>{upd.target.label}</span>
                                 </button>
@@ -1176,9 +1183,9 @@ export function DeadlineView({
                                   href={upd.externalUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-md"
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-cyan-300 bg-cyan-400/10 border border-cyan-500/30 hover:bg-cyan-400/20 rounded-lg transition-colors"
                                 >
-                                  <span>Xem thay đổi trên GitHub</span>
+                                  <span>Xem thêm chi tiết</span>
                                   <ExternalLink className="w-3.5 h-3.5" />
                                 </a>
                               )}

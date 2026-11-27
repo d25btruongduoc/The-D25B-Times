@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   Check,
   ChevronDown,
   ChevronUp,
   Copy,
+  Download,
   ExternalLink,
   FileText,
   MapPin,
@@ -11,6 +13,7 @@ import {
 } from 'lucide-react';
 import {
   CONTACTS,
+  DRL_CLASS_FORMS,
   DRL_GUIDES,
   DRL_LINKS,
   EXAM_FORMS,
@@ -19,6 +22,7 @@ import {
   SCHOOL_NOTICES,
 } from '../data/d25bData';
 import { HoverPreviewCard } from './HoverMiniPreview';
+import { DrlScoringGuideSection } from './DrlScoringGuideSection';
 
 interface HandbookViewProps {
   initialTab?: HandbookTab;
@@ -59,7 +63,19 @@ export function HandbookView({ initialTab }: HandbookViewProps) {
   const [activeTab, setActiveTab] = useState<HandbookTab>(initialTab || 'campus');
   const [mssv, setMssv] = useState('111250001');
   const [studentName, setStudentName] = useState('NGUYEN VAN A');
-  const [expandedNoticeIds, setExpandedNoticeIds] = useState<string[]>(['notice-dkhp-hk2']);
+  const [expandedNoticeIds, setExpandedNoticeIds] = useState<string[]>([
+    'notice-drl-hk1-2026-2027',
+    'notice-dkhp-hk2',
+  ]);
+
+  const [drlTo, setDrlTo] = useState('01');
+  const [drlMssv, setDrlMssv] = useState('511250001');
+  const [drlName, setDrlName] = useState('Nguyễn Văn A');
+  const [drlClass, setDrlClass] = useState('D25');
+  const [drlDob, setDrlDob] = useState('01012007');
+
+  const formattedDrlTo = drlTo.trim().padStart(2, '0').slice(-2);
+  const drlFileName = `${formattedDrlTo || '01'} - ${drlMssv.trim() || 'MSSV'} - ${drlName.trim() || 'Họ và tên'} - ${drlClass.trim() || 'D25'} - ${drlDob.trim() || 'DDMMYYYY'}.pdf`;
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -423,98 +439,303 @@ export function HandbookView({ initialTab }: HandbookViewProps) {
 
       {/* TAB 4: ĐIỂM RÈN LUYỆN & SINH VIÊN 5 TỐT */}
       {activeTab === 'drl' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-7 bg-[#0E1525] border border-slate-800 rounded-xl p-6 sm:p-8 space-y-5">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-cyan-400 font-semibold">
-                Săn điểm rèn luyện · D25B
-              </p>
-              <h2 className="mt-1 font-heading text-2xl sm:text-3xl font-bold text-slate-50">
-                Bảng hướng dẫn, Form đóng góp &amp; Danh sách hoạt động ĐRL
-              </h2>
-              <p className="mt-2 text-sm text-slate-300 leading-relaxed">
-                Nếu bạn có thông tin về các chương trình, hội thảo, hoạt động tình nguyện cộng điểm rèn luyện, hãy điền vào Form để chia sẻ chung cho cả lớp D25B cùng tham gia.
-              </p>
+        <div className="space-y-8">
+          {/* Official Announcement Card for DRL HK1 2026-2027 */}
+          <section className="bg-gradient-to-br from-[#0F1D38] via-[#0E1525] to-[#0A0F1D] border-2 border-cyan-500/40 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-700/80">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 text-xs font-semibold uppercase tracking-wider rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                  Thông báo khẩn · Đang mở chấm
+                </span>
+                <span className="text-xs text-slate-400">BCH Đoàn – Hội Trường Dược</span>
+              </div>
+              <span className="font-mono text-xs text-cyan-300 bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-500/30">
+                07h00 27/11/2026 – 17h00 29/11/2026
+              </span>
             </div>
 
-            <div className="divide-y divide-slate-800 border-t border-slate-800">
-              {DRL_LINKS.map((item) => (
+            <div className="mt-5 space-y-4">
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-slate-50 leading-tight">
+                Triển khai Chấm Điểm rèn luyện Học kỳ 1 Năm học 2026–2027
+              </h2>
+
+              <div className="p-4 sm:p-5 rounded-xl bg-[#090E1A]/85 border border-slate-700/80 space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <p className="font-medium text-slate-200">
+                  Thân gửi các bạn sinh viên,
+                </p>
+                <p>
+                  Ban Chấp Hành Đoàn – Hội Trường Dược xin thông báo về việc triển khai chấm điểm rèn luyện HK1 năm học 2026–2027. Thông tin chi tiết về nội dung, hình thức và hướng dẫn chấm điểm được đính kèm trong file thông báo. Các bạn vui lòng đọc kỹ hướng dẫn và thực hiện chấm điểm theo đúng quy định.
+                </p>
+                <div className="space-y-1.5 font-medium text-slate-200 pt-1">
+                  <p className="text-cyan-300 font-semibold">Một số lưu ý quan trọng:</p>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-300">
+                    <li>
+                      <strong className="text-slate-100">Thời gian chấm qua forms:</strong> Từ{' '}
+                      <span className="text-amber-300 font-mono font-semibold">07h00 ngày 27/11/2026</span> đến{' '}
+                      <span className="text-amber-300 font-mono font-semibold">17h00 ngày 29/11/2026</span>.
+                    </li>
+                    <li>
+                      <strong className="text-slate-100">Thời gian ghi nhận hoạt động HK1:</strong>{' '}
+                      <span className="font-mono text-cyan-300">04/05/2026 – 15/11/2026</span>.
+                    </li>
+                    <li>
+                      <strong className="text-slate-100">Chọn đúng khối lớp:</strong> Sinh viên cần lựa chọn đúng biểu mẫu Microsoft Forms tương ứng với khối lớp mình đang theo học trước khi tiến hành kê khai thông tin.
+                    </li>
+                    <li>
+                      <strong className="text-amber-300">Kiểm tra thông tin kỹ:</strong> Vui lòng kiểm tra kỹ các thông tin đã kê khai trước khi gửi biểu mẫu. Trường hợp điền sai Forms, sinh viên tự chịu trách nhiệm và BCH Đoàn – Hội Trường Dược không hỗ trợ chuyển hoặc khôi phục dữ liệu giữa các biểu mẫu.
+                    </li>
+                    <li>
+                      <strong className="text-slate-100">Điểm học tập &amp; thưởng:</strong> Sẽ được BCH Trường Dược cộng sau khi có bảng điểm chính thức từ đào tạo.
+                    </li>
+                  </ul>
+                </div>
+                <p className="pt-2 text-slate-400 italic">
+                  Đề nghị các bạn chủ động theo dõi thông báo, thực hiện chấm điểm trong thời gian quy định và tránh để sát thời hạn mới hoàn thành nhằm hạn chế các sai sót phát sinh. Chúc các bạn hoàn thành tốt đợt chấm điểm rèn luyện!
+                </p>
+                <p className="text-right text-xs font-semibold text-slate-300">
+                  Trân trọng,<br />Ban Chấp Hành Đoàn – Hội Trường Dược.
+                </p>
+              </div>
+
+              {/* Main Actions Row */}
+              <div className="pt-2 flex flex-wrap items-center gap-3">
                 <a
-                  key={item.url}
-                  href={item.url}
+                  href="https://forms.cloud.microsoft/r/BxgkvkGrrT"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="py-3.5 flex items-center justify-between gap-4 group"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 text-slate-950 text-sm font-bold shadow-lg shadow-cyan-500/20 hover:from-cyan-300 hover:to-teal-300 transition-all hover:scale-[1.02] cursor-pointer"
                 >
-                  <span className="text-sm font-medium text-slate-200 group-hover:text-cyan-300">
-                    {item.label}
-                  </span>
-                  <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 shrink-0" />
+                  <span>Mở Form Chấm ĐRL DCQ2025 (D25B)</span>
+                  <ExternalLink className="w-4 h-4" />
                 </a>
+
+                <a
+                  href="/assets/aistudio/1._THO_NG_BA_O_CHA__M__RL_HK1_2026-2027_9e978317.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-[#131C31] hover:bg-[#1A2642] text-slate-100 text-xs sm:text-sm font-medium border border-slate-700 hover:border-cyan-400/50 transition-colors"
+                >
+                  <FileText className="w-4 h-4 text-cyan-400" />
+                  <span>Xem / Tải File Thông báo PDF gốc</span>
+                  <Download className="w-3.5 h-3.5 text-slate-400" />
+                </a>
+
+                <a
+                  href="https://umpedu-my.sharepoint.com/:x:/g/personal/doanhoikhoaduoc_ump_edu_vn/IQCkLVT7m6QtTaX7CbRjbvD4Ab85Apadth3bQhDaE3J6JBs?e=DdeNvR"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-[#131C31] hover:bg-[#1A2642] text-slate-100 text-xs sm:text-sm font-medium border border-slate-700 hover:border-cyan-400/50 transition-colors"
+                >
+                  <span>[2026–2027 HK1] Danh sách SV tham gia hoạt động (.xlsx)</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                </a>
+              </div>
+
+              {/* Other Class Forms Grid */}
+              <div className="mt-4 p-4 rounded-xl bg-[#0B1120] border border-slate-800 space-y-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Biểu mẫu Microsoft Forms theo từng khối lớp:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                  {DRL_CLASS_FORMS.map((f) => (
+                    <a
+                      key={f.classId}
+                      href={f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-2.5 rounded-lg border transition-colors flex items-center justify-between gap-2 ${
+                        f.isCurrentClass
+                          ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-300 font-semibold'
+                          : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="truncate">{f.label}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {/* Syntax & File Naming Generator Tool */}
+              <div className="mt-4 p-4 sm:p-5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <h3 className="text-xs sm:text-sm font-bold text-amber-300">
+                      Quy định đặt tên file minh chứng PDF (Nộp ở cuối Forms)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] font-medium text-rose-400 bg-rose-950/50 px-2 py-0.5 rounded border border-rose-500/30">
+                    Sai cú pháp trừ 2 điểm tổng
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-300">
+                  Cú pháp chuẩn: <strong className="font-mono text-cyan-300">Tổ - MSSV - Họ và tên - Lớp - Ngày tháng năm sinh</strong> (Tổ lấy đúng 2 chữ số). Bạn có thể chỉnh các ô bên dưới để sao chép chuẩn 100%:
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">Tổ (2 số)</label>
+                    <input
+                      type="text"
+                      value={drlTo}
+                      onChange={(e) => setDrlTo(e.target.value)}
+                      placeholder="01"
+                      className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-100 font-mono text-xs focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">MSSV</label>
+                    <input
+                      type="text"
+                      value={drlMssv}
+                      onChange={(e) => setDrlMssv(e.target.value)}
+                      placeholder="511250001"
+                      className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-100 font-mono text-xs focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">Họ và tên</label>
+                    <input
+                      type="text"
+                      value={drlName}
+                      onChange={(e) => setDrlName(e.target.value)}
+                      placeholder="Nguyễn Văn A"
+                      className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">Lớp</label>
+                    <input
+                      type="text"
+                      value={drlClass}
+                      onChange={(e) => setDrlClass(e.target.value)}
+                      placeholder="D25"
+                      className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-100 font-mono text-xs focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-[11px] text-slate-400 mb-1">Ngày sinh (DDMMYYYY)</label>
+                    <input
+                      type="text"
+                      value={drlDob}
+                      onChange={(e) => setDrlDob(e.target.value)}
+                      placeholder="07052000"
+                      className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-100 font-mono text-xs focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-3">
+                  <span className="font-mono text-xs text-amber-200 select-all break-all">
+                    {drlFileName}
+                  </span>
+                  <CopyInlineButton text={drlFileName} label="Sao chép tên file" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Căn cứ QĐ 1714/QĐ-ĐHYD: BẢNG HƯỚNG DẪN CHẤM ĐIỂM RÈN LUYỆN ĐẦY ĐỦ 5 MỤC (Ngăn cố định tương tác) */}
+          <DrlScoringGuideSection />
+
+          {/* 2-Column Section: Links & SV 5 Tốt */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7 bg-[#0E1525] border border-slate-800 rounded-xl p-6 sm:p-8 space-y-5">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-cyan-400 font-semibold">
+                  Tài liệu &amp; Biểu mẫu ĐRL
+                </p>
+                <h2 className="mt-1 font-heading text-2xl sm:text-3xl font-bold text-slate-50">
+                  Bảng hướng dẫn, Form đóng góp &amp; Danh sách hoạt động
+                </h2>
+                <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                  Nếu bạn có thông tin về các chương trình, hội thảo, hoạt động tình nguyện cộng điểm rèn luyện, hãy điền vào Form để chia sẻ chung cho cả lớp D25B cùng tham gia.
+                </p>
+              </div>
+
+              <div className="divide-y divide-slate-800 border-t border-slate-800">
+                {DRL_LINKS.map((item) => (
+                  <a
+                    key={item.url}
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-3.5 flex items-center justify-between gap-4 group"
+                  >
+                    <span className="text-sm font-medium text-slate-200 group-hover:text-cyan-300">
+                      {item.label}
+                    </span>
+                    <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 shrink-0" />
+                  </a>
+                ))}
+              </div>
+
+              {DRL_GUIDES.map((guide) => (
+                <div
+                  key={guide.id}
+                  className="p-4 bg-[#0B1120] border border-slate-800 rounded-lg space-y-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-slate-100">{guide.title}</h3>
+                    <span className="text-[11px] font-mono text-cyan-400 shrink-0">
+                      {guide.badge}
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs sm:text-sm text-slate-300 leading-relaxed list-disc pl-5">
+                    {guide.items.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
               ))}
             </div>
 
-            {DRL_GUIDES.map((guide) => (
-              <div
-                key={guide.id}
-                className="p-4 bg-[#0B1120] border border-slate-800 rounded-lg space-y-2.5"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-bold text-slate-100">{guide.title}</h3>
-                  <span className="text-[11px] font-mono text-cyan-400 shrink-0">
-                    {guide.badge}
-                  </span>
-                </div>
-                <ul className="space-y-1.5 text-xs sm:text-sm text-slate-300 leading-relaxed list-disc pl-5">
-                  {guide.items.map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ul>
+            <div className="lg:col-span-5 bg-[#0E1525] border border-slate-800 rounded-xl p-6 space-y-4">
+              <p className="text-xs uppercase tracking-widest text-slate-400">
+                Tuổi trẻ Trường Dược · Năm học 2025–2026
+              </p>
+              <h3 className="font-heading text-xl font-bold text-slate-50">
+                Xét chọn danh hiệu &ldquo;Sinh viên 5 Tốt&rdquo; Trường Dược
+              </h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                5 tiêu chí: <strong className="text-slate-100">Đạo đức tốt – Học tập tốt – Thể lực tốt – Tình nguyện tốt – Hội nhập tốt</strong>.
+              </p>
+              <ul className="space-y-2 text-xs sm:text-sm text-slate-300">
+                <li>
+                  <strong className="text-slate-100">Thời gian nộp:</strong> 08:00 – 17:00 từ{' '}
+                  <span className="font-mono text-cyan-300">18/09/2026 – 28/09/2026</span> (trừ T7 &amp; CN).
+                </li>
+                <li>
+                  <strong className="text-slate-100">Địa điểm:</strong> Văn phòng Đoàn – Hội Trường Dược (41–43 Đinh Tiên Hoàng).
+                </li>
+                <li>
+                  <strong className="text-slate-100">Lưu ý:</strong> Việc đề xuất biểu mẫu và nhận bảng điểm có thể mất 4–6 ngày nên cần chuẩn bị sớm; giấy xác nhận sau duyệt được đăng lên Drive chậm nhất sau 03 ngày.
+                </li>
+              </ul>
+              <div className="pt-2 flex flex-col gap-2">
+                <a
+                  href="https://docs.google.com/document/d/124E602jfVBZIPRaMKQLOqfpLFiAy5DbLs877umhmWE4/edit?usp=sharing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-between px-3.5 py-2.5 text-xs font-medium bg-[#0B1120] hover:bg-[#131C31] border border-slate-800 hover:border-cyan-500/40 rounded-md text-slate-200"
+                >
+                  <span>Bộ tiêu chí xét chọn Sinh viên 5 Tốt</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                </a>
+                <a
+                  href="https://docs.google.com/document/d/18T4O5dlNvtEDxJbXoi8by1mVyTobIQU2/edit?usp=sharing&ouid=105633943479691261981&rtpof=true&sd=true"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-between px-3.5 py-2.5 text-xs font-medium bg-[#0B1120] hover:bg-[#131C31] border border-slate-800 hover:border-cyan-500/40 rounded-md text-slate-200"
+                >
+                  <span>Mẫu &amp; Tra cứu giấy xác nhận hoạt động cấp Trường</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                </a>
               </div>
-            ))}
-          </div>
-
-          <div className="lg:col-span-5 bg-[#0E1525] border border-slate-800 rounded-xl p-6 space-y-4">
-            <p className="text-xs uppercase tracking-widest text-slate-400">
-              Tuổi trẻ Trường Dược · Năm học 2025–2026
-            </p>
-            <h3 className="font-heading text-xl font-bold text-slate-50">
-              Xét chọn danh hiệu &ldquo;Sinh viên 5 Tốt&rdquo; Trường Dược
-            </h3>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              5 tiêu chí: <strong className="text-slate-100">Đạo đức tốt – Học tập tốt – Thể lực tốt – Tình nguyện tốt – Hội nhập tốt</strong>.
-            </p>
-            <ul className="space-y-2 text-xs sm:text-sm text-slate-300">
-              <li>
-                <strong className="text-slate-100">Thời gian nộp:</strong> 08:00 – 17:00 từ{' '}
-                <span className="font-mono text-cyan-300">18/09/2026 – 28/09/2026</span> (trừ T7 &amp; CN).
-              </li>
-              <li>
-                <strong className="text-slate-100">Địa điểm:</strong> Văn phòng Đoàn – Hội Trường Dược (41–43 Đinh Tiên Hoàng).
-              </li>
-              <li>
-                <strong className="text-slate-100">Lưu ý:</strong> Việc đề xuất biểu mẫu và nhận bảng điểm có thể mất 4–6 ngày nên cần chuẩn bị sớm; giấy xác nhận sau duyệt được đăng lên Drive chậm nhất sau 03 ngày.
-              </li>
-            </ul>
-            <div className="pt-2 flex flex-col gap-2">
-              <a
-                href="https://docs.google.com/document/d/124E602jfVBZIPRaMKQLOqfpLFiAy5DbLs877umhmWE4/edit?usp=sharing"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-between px-3.5 py-2.5 text-xs font-medium bg-[#0B1120] hover:bg-[#131C31] border border-slate-800 hover:border-cyan-500/40 rounded-md text-slate-200"
-              >
-                <span>Bộ tiêu chí xét chọn Sinh viên 5 Tốt</span>
-                <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
-              </a>
-              <a
-                href="https://docs.google.com/document/d/18T4O5dlNvtEDxJbXoi8by1mVyTobIQU2/edit?usp=sharing&ouid=105633943479691261981&rtpof=true&sd=true"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-between px-3.5 py-2.5 text-xs font-medium bg-[#0B1120] hover:bg-[#131C31] border border-slate-800 hover:border-cyan-500/40 rounded-md text-slate-200"
-              >
-                <span>Mẫu &amp; Tra cứu giấy xác nhận hoạt động cấp Trường</span>
-                <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
-              </a>
             </div>
           </div>
         </div>
