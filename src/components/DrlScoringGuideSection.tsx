@@ -150,16 +150,17 @@ export function DrlScoringGuideSection() {
   ];
 
   return (
-    <section className="bg-[#0B1120] border-2 border-cyan-500/40 rounded-2xl p-5 sm:p-7 shadow-2xl space-y-6">
+    <section className="bg-[#0B1120] border-2 border-[#39FF14] shadow-[0_0_35px_-5px_rgba(57,255,20,0.38),0_0_15px_rgba(57,255,20,0.22)] rounded-2xl p-5 sm:p-7 space-y-6">
       {/* Header of the Special Fixed Guide Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-lg bg-cyan-400/15 text-cyan-300 border border-cyan-400/30">
-              <FileSpreadsheet className="w-5 h-5" />
+            <span className="p-2 rounded-lg bg-[#39FF14]/15 text-[#39FF14] border border-[#39FF14]/30 shadow-[0_0_12px_rgba(57,255,20,0.2)]">
+              <FileSpreadsheet className="w-5 h-5 text-[#39FF14]" />
             </span>
             <div>
-              <span className="text-[11px] font-mono text-cyan-400 uppercase tracking-widest font-semibold">
+              <span className="text-[11px] font-mono text-[#39FF14] uppercase tracking-widest font-semibold flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#39FF14] shadow-[0_0_8px_#39FF14] animate-pulse" />
                 Căn cứ QĐ số 1714/QĐ-ĐHYD · Ban hành 14/04/2026
               </span>
               <h2 className="font-heading text-xl sm:text-2xl font-bold text-slate-50 leading-tight">
@@ -178,9 +179,9 @@ export function DrlScoringGuideSection() {
             href="/assets/aistudio/BA_NG_HU_O__NG_DA__N_CHA__M__IE__M_RE_N_LUYE__N_-_BA_NG_HU_O__NG_DA__N_update_fa2fcdb7.pdf"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-100 bg-[#131C31] hover:bg-[#1A2642] border border-slate-700 hover:border-cyan-400/50 rounded-lg transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-100 bg-[#131C31] hover:bg-[#1A2642] border border-slate-700 hover:border-[#39FF14]/50 rounded-lg transition-colors cursor-pointer"
           >
-            <FileText className="w-3.5 h-3.5 text-cyan-400" />
+            <FileText className="w-3.5 h-3.5 text-[#39FF14]" />
             <span>Xem PDF gốc</span>
             <Download className="w-3 h-3 text-slate-400" />
           </a>
@@ -188,7 +189,7 @@ export function DrlScoringGuideSection() {
             href="https://docs.google.com/spreadsheets/d/158atOdxiTKE1HZ3jUSk_tBHqG2gxePDQjHGFUga4KJo/edit?usp=drive_link"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-lg transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-950 bg-[#39FF14] hover:bg-[#32e012] shadow-[0_0_15px_rgba(57,255,20,0.3)] rounded-lg transition-colors cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Mở Google Sheets</span>
@@ -206,7 +207,7 @@ export function DrlScoringGuideSection() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tra cứu nhanh điểm: gõ hiến máu, họp lớp, e-portfolio, ngoại trú, btc, giải ba, xuất sắc..."
-            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#070B14] border border-slate-700 hover:border-slate-600 focus:border-cyan-400 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-colors"
+            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#070B14] border border-slate-700 hover:border-slate-600 focus:border-[#39FF14] focus:ring-1 focus:ring-[#39FF14]/40 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-colors"
           />
           {searchQuery && (
             <button
